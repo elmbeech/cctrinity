@@ -1,0 +1,10 @@
+# basics
+**/~*
+**/.DS_Store
+**/._.DS_Store
+
+# python
+__pycache__
+
+# cc3d
+_settings.sqlite

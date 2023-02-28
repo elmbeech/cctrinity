@@ -1,0 +1,6 @@
+#!/bin/sh
+# made using https://github.com/JulianoGianlupi/cc3d-nanoHub-tool-setuper
+/usr/bin/invoke_app "$@" -C @tool/bin/cctrinity.sh -t cctrinity \
+                         -u compucell3d-4.2.2 \
+                         -w captive \
+                         -r none
