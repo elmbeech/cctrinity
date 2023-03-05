@@ -7,7 +7,7 @@
       <DebugOutputFrequency>10</DebugOutputFrequency>
       <!-- <NonParallelModule Name="Potts"/> -->
    </Metadata>
-   
+   <!-- JHP -->
    <Potts>
       
       <!-- Basic properties of CPM (GGH) algorithm -->
