@@ -23,15 +23,15 @@ import numpy as np
 def main():
     args = read_args()                                # read command line input
     CellLines = configure_cell_lines()                # set/infer cell properties from experiments
-    
+
     model_file = 'AdhesionDriven_CellModel_v5.7.2.latest.xml'
     configure_XML_model(args, model_file, CellLines)  # create folder, and modify XML file
-    
+
     run_model(model_file)                             # runs simulation, saves stderr/stdout to file
 
 def make_sure_path_exists(path):
     """ Function for safely making output folders """
- 
+
     try:
         os.makedirs(path)
     except OSError as exception:
@@ -43,7 +43,7 @@ def read_args():
     # Read parameters from the command line
     parser = argparse.ArgumentParser(description=\
     "This is an extended Cellular Potts Model that captures self-sorting in hiPSCs.\n")
-    
+
     #Set command line arguments
     parser.add_argument("cell_line_1",
                         help="Cell line 1.{CDH1-0,CDH1-70,CDH1-75,CDH1-90,ROCK1-20,wildtype}",
@@ -77,10 +77,10 @@ def configure_cell_lines():
     # Create mapping from cell line to repsective parameters.
     # These values were obtained from experimental measuremnts
     # of cell area/perimeter/circularity, and time-depenet gene expression after
-    # CRISPR knockout of selected genes. 
+    # CRISPR knockout of selected genes.
     ########################################
     # This will be used to replace region of the XML file
-    
+
     C = {}  # Cell mappings
     cdh1_mutants = [70,75,90] # percent repression of gene
 
@@ -92,7 +92,7 @@ def configure_cell_lines():
                 'area_edge_final_sd':49.66,
                 'membraneElasticity_final':1.12,
                 'membraneElasticity_final_edge':1.32,
-		        'membrane_str_final':0.5,
+                'membrane_str_final':0.5,
                 'k_half_hours':48.28,
                 'generation_time_final': 20
                 }
@@ -110,9 +110,9 @@ def configure_cell_lines():
                     }
 
     # create mutants for CDH1
-    for mutant_strength in cdh1_mutants:    
+    for mutant_strength in cdh1_mutants:
         s=(100.0-mutant_strength)/100.0  #relative mutatant decrease
-        
+
         # set area (center)
         wt_area = C['wildtype']['area_final']
         cdh1_0_area = C['CDH1-0']['area_final']
@@ -122,7 +122,7 @@ def configure_cell_lines():
         wt_area_edge = C['wildtype']['area_edge_final']
         cdh1_0_area_edge = C['CDH1-0']['area_edge_final']
         new_area_edge = wt_area_edge + (cdh1_0_area_edge-wt_area_edge)*s
-        
+
         # set membrane (center)
         wt_mem_center = C['wildtype']['membraneElasticity_final']
         cdh1_0_mem_center = C['CDH1-0']['membraneElasticity_final']
@@ -130,12 +130,12 @@ def configure_cell_lines():
 
         # set membrane (edge)
         wt_mem_edge = C['wildtype']['membraneElasticity_final_edge']
-        cdh1_0_mem_edge = C['CDH1-0']['membraneElasticity_final_edge'] 
+        cdh1_0_mem_edge = C['CDH1-0']['membraneElasticity_final_edge']
         new_membrane_edge = wt_mem_edge + (cdh1_0_mem_edge-wt_mem_edge)*s
 
         #set adhesion
         wt_adhesion = C['wildtype']['adhesion_weak']
-        cdh1_0_adhesion = C['CDH1-0']['adhesion_weak'] 
+        cdh1_0_adhesion = C['CDH1-0']['adhesion_weak']
         new_adhesion = wt_adhesion + (cdh1_0_adhesion-wt_adhesion)*s
 
         #create cell line
@@ -167,23 +167,23 @@ def configure_cell_lines():
                     'k_half_hours':46.78,
                     'generation_time_final': 20
                     }
-    
+
     return C
 
 
 ##############################################################################
 def configure_XML_model(args, model_file,cell_lines):
     output_folder = "%s_%s_%s_%s_%s_%s" % (args.cell_line_1,args.time_1,args.cell_line_2,args.time_2,args.num_cells_cell_line_2,args.sim_id)
-    
+
     output_folder_prefix = "simulations"
     output_folder = os.path.join(output_folder_prefix,output_folder) #prefix folder
-    
-    
+
+
     #create new directory for sim and chdir
     make_sure_path_exists(output_folder)
     copyfile(model_file, os.path.join(output_folder,model_file))
     os.chdir(output_folder)
-    
+
     # Modify new XML file with model parameters
     change_XML(args,model_file,cell_lines)
 
@@ -214,10 +214,10 @@ def change_XML(args,model_file,cell_lines):
     # 1. change ct1 and ct2 global variables
     doc = minidom.parse(model_file)
     variables = doc.getElementsByTagName("Variable")
-    
+
     for var in variables:
         symbol_name = var.attributes["symbol"].value
-    
+
         # set cell line 1
         if symbol_name.startswith('ct1'):
             if 'perturbation' in symbol_name:
@@ -246,7 +246,7 @@ def change_XML(args,model_file,cell_lines):
         elif symbol_name == 'num_cells_ct2':
             var.setAttribute("value",str(args.num_cells_cell_line_2))
             #print symbol_name,args.num_cells_cell_line_2
-    
+
     # 2. Change the random seed to a random number not dependent on time.
     random_integer = np.random.randint(0,100000)
     RandomSeed_variable = doc.getElementsByTagName("RandomSeed")[0]
@@ -258,8 +258,8 @@ def change_XML(args,model_file,cell_lines):
         simulation_stop_time = 96
     stop_time = doc.getElementsByTagName("StopTime")[0]
     stop_time.setAttribute("value",str(simulation_stop_time))
-    
-    # Write XML file 
+
+    # Write XML file
     file_handle = open(model_file,"w")
     doc.writexml(file_handle)
     file_handle.close()

@@ -54,7 +54,7 @@ dd_cellline.update({'wt': {
     'volumepsurface_final': 1.12,
     'volumepsurface_edge_final': 1.32,
     'lambda_surface_final': 0.5,
-    'km_half_time': 48.28, # bue: how can they have km when there is littteraly no protein knocked down?
+    'km_half_time': 48.28, # bue: how can they have km when there is littteraly no protein knocked down? it is just the CDH1 value, that the linear translation works!
     'generation_time_final': 20
 }})
 dd_cellline.update({'ROCK1-20': {

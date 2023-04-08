@@ -114,7 +114,7 @@ added random seed so time doesn't determine randomness of initial cell positions
 ))</Expression>
             </Rule>
             <Rule symbol-ref="ct1_area">
-                <Expression>if(time >burn_in_time,ct1_area_init,
+                <Expression>if(time >burn_in_time,ct1_area_init,  <!-- bue: i am quit shure this should be time &lt; burn_in_time -->
  if( (ct1_area_init &lt; ct1_area_final) 
      and ct1_area &lt; ct1_area_final,
 ct1_area_init + 
