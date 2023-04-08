@@ -1,54 +1,91 @@
 <CompuCell3D Revision="0" Version="4.3.2">
-  
-   <!-- 2023-03-08: nanohub realeas 0.0.0 -->
- 
+
+    <!-- 2023-03-08: nanohub realeas 0.0.0 -->
+
    <Metadata>
-      
       <!-- Basic properties simulation -->
-      <NumberOfProcessors>1</NumberOfProcessors>
+      <NumberOfProcessors>4</NumberOfProcessors>
       <DebugOutputFrequency>10</DebugOutputFrequency>
       <!-- <NonParallelModule Name="Potts"/> -->
    </Metadata>
-   
+
    <Potts>
-      
       <!-- Basic properties of CPM (GGH) algorithm -->
-      <Dimensions x="256" y="256" z="1"/>
-      <Steps>100000</Steps>
-      <Temperature>10.0</Temperature>
-      <NeighborOrder>1</NeighborOrder>
+      <Dimensions x="1200" y="1200" z="1"/>
+      <Steps>100000</Steps>  <!-- edgelist; 0.03; 96[h] -->
+      <Temperature>10.0</Temperature>  <!-- temperature yeld 0.1: offset for Boltzmann probability distribution representing resistance to membrane deformations (see Kafer, Hogeweg and Maree, PLoS Comp Biol, 2006). -->
+      <NeighborOrder>4</NeighborOrder>
       <Boundary_x>Periodic</Boundary_x>
       <Boundary_y>Periodic</Boundary_y>
    </Potts>
-   
+
    <Plugin Name="CellType">
-      
       <!-- Listing all cell types in the simulation -->
       <CellType TypeId="0" TypeName="Medium"/>
+      <CellType TypeId="1" TypeName="ct1"/>
+      <CellType TypeId="2" TypeName="ct2"/>
    </Plugin>
-   
+
    <Plugin Name="Volume"/>
-   
+
+   <Plugin Name="Surface"/>  <!-- neighbororder 1 -->
+
+   <Plugin Name="ExternalPotential">
+      <!-- External force applied to cell. Each cell has different force and force components have to be managed in Python. -->
+      <!-- e.g. cell.lambdaVecX=0.5; cell.lambdaVecY=0.1 ; cell.lambdaVecZ=0.3; -->
+      <Algorithm>PixelBased</Algorithm>
+   </Plugin>
+
+   <Plugin Name="NeighborTracker">
+       <!-- Module tracking neighboring cells of each cell -->
+   </Plugin>
+
    <Plugin Name="CenterOfMass">
-      
       <!-- Module tracking center of mass of each cell -->
    </Plugin>
-   
+
+
+   <!-- Specification of adhesion energies -->
+   <!--
    <Plugin Name="Contact">
-      <!-- Specification of adhesion energies -->
       <Energy Type1="Medium" Type2="Medium">10.0</Energy>
+      <Energy Type1="Medium" Type2="ct1">10.0</Energy>
+      <Energy Type1="Medium" Type2="ct2">10.0</Energy>
+      <Energy Type1="ct1" Type2="ct1">10.0</Energy>
+      <Energy Type1="ct1" Type2="ct2">10.0</Energy>
+      <Energy Type1="ct2" Type2="ct2">10.0</Energy>
       <NeighborOrder>4</NeighborOrder>
    </Plugin>
-   
+   -->
+
+   <Plugin Name="AdhesionFlex">
+      <!-- Specification of adhesion energies as a function of cadherin concentration at cell membranes -->
+      <!-- Adhesion energy is a function of two cells in ocntact. the functional form is specified by the user -->
+      <AdhesionMolecule Molecule="cdh"/>
+      <AdhesionMoleculeDensity CellType="Medium" Density="1.1" Molecule="cdh"/>  <!-- ctall_Medium_adhesion 0 cadherin -->
+      <AdhesionMoleculeDensity CellType="ct1" Density="1.1" Molecule="cdh"/>
+      <AdhesionMoleculeDensity CellType="ct2" Density="1.1" Molecule="cdh"/>
+      <BindingFormula Name="Binary">
+         <Formula>min(Molecule1,Molecule2)</Formula>  <!-- funny this is max in the paper -->
+         <Variables>
+            <AdhesionInteractionMatrix>
+               <BindingParameter Molecule1="cdh" Molecule2="cdh">0.5</BindingParameter>
+            </AdhesionInteractionMatrix>
+         </Variables>
+      </BindingFormula>
+      <NeighborOrder>4</NeighborOrder>  <!-- neighbororder 1 -->
+   </Plugin>
+
+   <!-- Initial layout of cells in the form of rectangular slab
    <Steppable Type="UniformInitializer">
-      
-      <!-- Initial layout of cells in the form of rectangular slab -->
       <Region>
-         <BoxMin x="51" y="51" z="0"/>
-         <BoxMax x="204" y="204" z="1"/>
+         <BoxMin x="570" y="590" z="0"/>
+         <BoxMax x="630" y="610" z="1"/>
          <Gap>0</Gap>
          <Width>7</Width>
-         <Types/>
+         <Types>Medium,ct1,ct2</Types>
       </Region>
    </Steppable>
+   -->
+
 </CompuCell3D>
