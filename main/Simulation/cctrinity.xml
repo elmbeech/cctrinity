@@ -62,9 +62,9 @@
       <!-- Specification of adhesion energies as a function of cadherin concentration at cell membranes -->
       <!-- Adhesion energy is a function of two cells in ocntact. the functional form is specified by the user -->
       <AdhesionMolecule Molecule="cdh"/>
-      <AdhesionMoleculeDensity CellType="Medium" Density="1.1" Molecule="cdh"/>  <!-- ctall_Medium_adhesion 0 cadherin -->
-      <AdhesionMoleculeDensity CellType="ct1" Density="1.1" Molecule="cdh"/>
-      <AdhesionMoleculeDensity CellType="ct2" Density="1.1" Molecule="cdh"/>
+      <AdhesionMoleculeDensity CellType="Medium" Density="1" Molecule="cdh"/>  <!-- Density 1.1 -->
+      <AdhesionMoleculeDensity CellType="ct1" Density="1" Molecule="cdh"/>  <!-- Density 1.1 -->
+      <AdhesionMoleculeDensity CellType="ct2" Density="1" Molecule="cdh"/>  <!-- Density 1.1 -->
       <BindingFormula Name="Binary">
          <Formula>min(Molecule1,Molecule2)</Formula>  <!-- funny this is max in the paper -->
          <Variables>
