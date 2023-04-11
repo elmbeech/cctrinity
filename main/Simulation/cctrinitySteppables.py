@@ -12,11 +12,17 @@ ct2 = 'ROCK1'
 ct1_cdh_kd_fract = None  # {70 .. 90}
 ct2_cdh_kd_fract = None  # {70 .. 90}
 # perturbation time point
-ct1_kd_time = -144  # {-144 .. 96}
-ct2_kd_time = -74  # {-144 .. 96}
+ct1_kd_time = -16  # {-144 .. 96}
+ct2_kd_time = -16  # {-144 .. 96}
 # cell number seeded
 ct1_seed = 50
 ct2_seed = 50
+
+time_verbose = False
+volume_verbose = False
+surface_verbose = False
+volpsurf_verbose = False
+adhesion_verbose = False
 
 # error check and update input
 if not ct1 in ct:
@@ -193,7 +199,7 @@ class GrowthSteppable(SteppableBasePy):
         # set initial volume and surface constraints
         for cell in self.cell_list:
             cell.dict['dt'] = generation_time_init
-            cell.dict['dc'] = 0  # set division time cunter to zero
+            cell.dict['dc'] = np.random.uniform(0.0, generation_time_init + r_hpmcs)  # set division time counter
             cell.targetVolume = volume_init
             cell.lambdaVolume = lambda_volume_int
             cell.dict['volumepsurface'] = volumepsurface_init
@@ -201,9 +207,81 @@ class GrowthSteppable(SteppableBasePy):
             cell.lambdaSurface = lambda_surface_init
             cell.dict['adhesion'] = adhesion_init
 
+        ### plots ###
+        if (adhesion_verbose):
+            self.plot_win_adhesion = self.add_new_plot_window(
+                title='cell adhesion evolution.',
+                x_axis_title='monte_carlo_step',
+                y_axis_title='adhesion',
+                x_scale_type='linear',
+                y_scale_type='linear',
+                grid=True,
+                config_options={'legend': True},
+            )
+            self.plot_win_adhesion.add_plot("ct1_adhesion", style='dots', color='white', size=2)
+            self.plot_win_adhesion.add_plot("ct2_adhesion", style='dots', color='silver', size=2)
+
+        if (volume_verbose):
+            self.plot_win_volume = self.add_new_plot_window(
+                title='cell volume evolution.',
+                x_axis_title='monte_carlo_step',
+                y_axis_title='volume',
+                x_scale_type='linear',
+                y_scale_type='linear',
+                grid=True,
+                config_options={'legend': True},
+            )
+            self.plot_win_volume.add_plot("ct1_volume", style='dots', color='cyan', size=2)
+            self.plot_win_volume.add_plot("ct2_volume", style='dots', color='blue', size=2)
+            self.plot_win_volume.add_plot("ct1_volume_edge", style='dots', color='orange', size=2)
+            self.plot_win_volume.add_plot("ct2_volume_edge", style='dots', color='red', size=2)
+            self.plot_win_volume.add_plot("lambda_volume", style='dots', color='lime', size=2)
+
+        if (surface_verbose):
+            self.plot_win_surface = self.add_new_plot_window(
+                title='cell surface evolution.',
+                x_axis_title='monte_carlo_step',
+                y_axis_title='surface',
+                x_scale_type='linear',
+                y_scale_type='linear',
+                grid=True,
+                config_options={'legend': True},
+            )
+            self.plot_win_surface.add_plot("ct1_surface", style='dots', color='cyan', size=2)
+            self.plot_win_surface.add_plot("ct2_surface", style='dots', color='blue', size=2)
+            self.plot_win_surface.add_plot("ct1_surface_edge", style='dots', color='orange', size=2)
+            self.plot_win_surface.add_plot("ct2_surface_edge", style='dots', color='red', size=2)
+            self.plot_win_surface.add_plot("ct1_lambda_surface", style='dots', color='lime', size=2)
+            self.plot_win_surface.add_plot("ct2_lambda_surface", style='dots', color='green', size=2)
+
+
+        if (volpsurf_verbose):
+            self.plot_win_volpsurf = self.add_new_plot_window(
+                title='cell volume per surface evolution.',
+                x_axis_title='monte_carlo_step',
+                y_axis_title='volume / surface',
+                x_scale_type='linear',
+                y_scale_type='linear',
+                grid=True,
+                config_options={'legend': True},
+            )
+            self.plot_win_volpsurf.add_plot("ct1_volumepsurface", style='dots', color='cyan', size=2)
+            self.plot_win_volpsurf.add_plot("ct2_volumepsurface", style='dots', color='blue', size=2)
+            self.plot_win_volpsurf.add_plot("ct1_volumepsurface_edge", style='dots', color='orange', size=2)
+            self.plot_win_volpsurf.add_plot("ct2_volumepsurface_edge", style='dots', color='red', size=2)
+
+        # text output
+        self.msg_win_rudy = self.add_new_message_window(title='Rudy a message to you ...')
+
+
     def step(self, mcs):
         # get time in hour
-        time = (mcs / r_hpmcs) + min(0, ct1_kd_time, ct2_kd_time)
+        time = (mcs * r_hpmcs) + min(0, ct1_kd_time, ct2_kd_time)
+        #print('die zeit:', mcs, time)
+
+        # print to text window
+        #self.msg_win1.clear()
+        self.msg_win_rudy.print(f"simulation time: {mcs}[mcs] {round(time, 3)}[h]")
 
         # for each cell
         for cell in self.cell_list:
@@ -244,6 +322,12 @@ class GrowthSteppable(SteppableBasePy):
                 else:
                     set_lambda_surface = dd_cellline[ct1]['lambda_surface_final']
 
+                # plot
+                if (adhesion_verbose):
+                    self.plot_win_adhesion.add_data_point("ct1_adhesion", x=mcs, y=set_adhesion)
+                if (surface_verbose):
+                    self.plot_win_surface.add_data_point("ct1_lambda_surface", x=mcs, y=set_lambda_surface)
+
                 # if edge cell
                 if (isEdgeCell > 0):
                     # ct volume_edge
@@ -263,6 +347,15 @@ class GrowthSteppable(SteppableBasePy):
                         set_volumepsurface = volumepsurface_init
                     else:
                         set_volumepsurface = dd_cellline[ct1]['volumepsurface_edge_final']
+                    set_surface = set_volume / set_volumepsurface
+
+                    # plot
+                    if (volume_verbose):
+                        self.plot_win_volume.add_data_point("ct1_volume_edge", x=mcs, y=set_volume)
+                    if (volpsurf_verbose):
+                        self.plot_win_volpsurf.add_data_point("ct1_volumepsurface_edge", x=mcs, y=set_volumepsurface)
+                    if (surface_verbose):
+                        self.plot_win_surface.add_data_point("ct1_surface_edge", x=mcs, y=set_surface)
 
                 else:
                     # ct1 volume
@@ -282,6 +375,15 @@ class GrowthSteppable(SteppableBasePy):
                         set_volumepsurface = volumepsurface_init
                     else:
                         set_volumepsurface = dd_cellline[ct1]['volumepsurface_final']
+                    set_surface = set_volume / set_volumepsurface
+
+                    # plot
+                    if (volume_verbose):
+                        self.plot_win_volume.add_data_point("ct1_volume", x=mcs, y=set_volume)
+                    if (volpsurf_verbose):
+                        self.plot_win_volpsurf.add_data_point("ct1_volumepsurface", x=mcs, y=set_volumepsurface)
+                    if (surface_verbose):
+                        self.plot_win_surface.add_data_point("ct1_surface", x=mcs, y=set_surface)
 
             ### ct2 ###
             elif (cell.type == self.CT2):
@@ -305,6 +407,12 @@ class GrowthSteppable(SteppableBasePy):
                 else:
                     set_lambda_surface = dd_cellline[ct2]['lambda_surface_final']
 
+                # plot
+                if (adhesion_verbose):
+                    self.plot_win_adhesion.add_data_point("ct2_adhesion", x=mcs, y=set_adhesion)
+                if (surface_verbose):
+                    self.plot_win_surface.add_data_point("ct2_lambda_surface", x=mcs, y=set_lambda_surface)
+
                 # if edge cell
                 if (isEdgeCell > 0):
                     # ct2_volume_edge
@@ -324,6 +432,15 @@ class GrowthSteppable(SteppableBasePy):
                         set_volumepsurface = volumepsurface_init
                     else:
                         set_volumepsurface = dd_cellline[ct2]['volumepsurface_edge_final']
+                    set_surface = set_volume / set_volumepsurface
+
+                    # plot
+                    if (volume_verbose):
+                        self.plot_win_volume.add_data_point("ct2_volume_edge", x=mcs, y=set_volume)
+                    if (volpsurf_verbose):
+                        self.plot_win_volpsurf.add_data_point("ct2_volumepsurface_edge", x=mcs, y=set_volumepsurface)
+                    if (surface_verbose):
+                        self.plot_win_surface.add_data_point("ct2_surface_edge", x=mcs, y=set_surface)
 
                 else:
                     # ct2_volume
@@ -343,6 +460,15 @@ class GrowthSteppable(SteppableBasePy):
                         set_volumepsurface = volumepsurface_init
                     else:
                         set_volumepsurface = dd_cellline[ct2]['volumepsurface_final']
+                    set_surface = set_volume / set_volumepsurface
+
+                    # plot
+                    if (volume_verbose):
+                        self.plot_win_volume.add_data_point("ct2_volume", x=mcs, y=set_volume)
+                    if (volpsurf_verbose):
+                        self.plot_win_volpsurf.add_data_point("ct2_volumepsurface", x=mcs, y=set_volumepsurface)
+                    if (surface_verbose):
+                       self.plot_win_surface.add_data_point("ct2_surface", x=mcs, y=set_surface)
 
             ### ct error ###
             else:
@@ -352,9 +478,14 @@ class GrowthSteppable(SteppableBasePy):
             cell.targetVolume = int(set_volume)
             cell.lambdaVolume = lambda_volume_int  # set_lambda_volume  bue: lambda_volume undergoes no calcualtion.
             cell.dict['volumepsurface'] = set_volumepsurface
-            cell.targetSurface = int(set_volume / set_volumepsurface)
+            cell.targetSurface = int(set_surface)
             cell.lambdaSurface = set_lambda_surface
             cell.dict['adhesion'] = set_adhesion
+
+            # plot
+            if (volume_verbose):
+                self.plot_win_volume.add_data_point("lambda_volume", x=mcs, y=lambda_volume_int)
+
 
             # bue: todo
             # set all cell-cell adession values, so that they have effect.
@@ -382,9 +513,25 @@ class MitosisSteppable(MitosisSteppableBase):
     def __init__(self,frequency=1):
         MitosisSteppableBase.__init__(self,frequency)
 
+    def start(self):
+        # scatter plot window volume and surface over time
+        if (time_verbose):
+            self.plot_win_time = self.add_new_plot_window(
+                title='time evolution',
+                x_axis_title='monte_carlo_step',
+                y_axis_title='hour',
+                x_scale_type='linear',
+                y_scale_type='linear',
+                grid=True,
+                config_options={'legend': True},
+            )
+            self.plot_win_time.add_plot("exeriment_time", style='dots', color='yellow', size=2)
+            self.plot_win_time.add_plot("generation_time", style='dots', color='red', size=2)
+            self.plot_win_time.add_plot("division_time", style='dots', color='orange', size=2)
+
     def step(self, mcs):
         # get time in hour
-        time = (mcs / r_hpmcs) + min(0, ct1_kd_time, ct2_kd_time)
+        time = (mcs * r_hpmcs) + min(0, ct1_kd_time, ct2_kd_time)
 
         # get cells to devide
         cells_to_divide=[]
@@ -425,6 +572,15 @@ class MitosisSteppable(MitosisSteppableBase):
                 cells_to_divide.append(cell)
             if (time >= 0):
                 cell.dict['dc'] += r_hpmcs
+
+            # plot per cell
+            if (time_verbose) and (mcs % 8):
+                self.plot_win_time.add_data_point("division_time", x=mcs, y=cell.dict['dc'])
+
+        # plot per mcs
+        if (time_verbose) and (mcs % 8):
+            self.plot_win_time.add_data_point("exeriment_time", x=mcs, y=time)
+            self.plot_win_time.add_data_point("generation_time", x=mcs, y=cell.dict['dt'])
 
         for cell in cells_to_divide:
             cell.dict['dt'] = generation_time_init
