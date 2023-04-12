@@ -30,14 +30,14 @@
 
    <Plugin Name="Surface"/>  <!-- neighbororder 1 -->
 
+   <!-- External force applied to cell. Each cell has different force and force components have to be managed in Python. -->
+   <!-- e.g. cell.lambdaVecX=0.5; cell.lambdaVecY=0.1 ; cell.lambdaVecZ=0.3; -->
    <Plugin Name="ExternalPotential">
-      <!-- External force applied to cell. Each cell has different force and force components have to be managed in Python. -->
-      <!-- e.g. cell.lambdaVecX=0.5; cell.lambdaVecY=0.1 ; cell.lambdaVecZ=0.3; -->
-      <Algorithm>PixelBased</Algorithm>
+      <Algorithm>CenterOfMassBased</Algorithm>  <!-- PixelBased -->
    </Plugin>
 
    <Plugin Name="NeighborTracker">
-       <!-- Module tracking neighboring cells of each cell -->
+      <!-- Module tracking neighboring cells of each cell -->
    </Plugin>
 
    <Plugin Name="CenterOfMass">
@@ -58,22 +58,22 @@
    </Plugin>
    -->
 
+   <!-- Specification of adhesion energies as a function of cadherin concentration at cell membranes -->
+   <!-- Adhesion energy is a function of two cells in ocntact. the functional form is specified by the user -->
    <Plugin Name="AdhesionFlex">
-      <!-- Specification of adhesion energies as a function of cadherin concentration at cell membranes -->
-      <!-- Adhesion energy is a function of two cells in ocntact. the functional form is specified by the user -->
       <AdhesionMolecule Molecule="cdh"/>
-      <AdhesionMoleculeDensity CellType="Medium" Density="1" Molecule="cdh"/>  <!-- Density 1.1 -->
-      <AdhesionMoleculeDensity CellType="ct1" Density="1" Molecule="cdh"/>  <!-- Density 1.1 -->
-      <AdhesionMoleculeDensity CellType="ct2" Density="1" Molecule="cdh"/>  <!-- Density 1.1 -->
-      <BindingFormula Name="Binary">
-         <Formula>min(Molecule1,Molecule2)</Formula>  <!-- funny this is max in the paper -->
+      <AdhesionMoleculeDensity CellType="Medium" Density="0.0" Molecule="cdh"/>
+      <AdhesionMoleculeDensity CellType="ct1" Density="-100.0" Molecule="cdh"/>
+      <AdhesionMoleculeDensity CellType="ct2" Density="-100.0" Molecule="cdh"/>
+      <BindingFormula Name="Cadherin">
+         <Formula>max(Molecule1,Molecule2)</Formula>  <!-- usually min but max in the paper -->
          <Variables>
             <AdhesionInteractionMatrix>
-               <BindingParameter Molecule1="cdh" Molecule2="cdh">0.5</BindingParameter>
+               <BindingParameter id="lamdaAdhesion" Molecule1="cdh" Molecule2="cdh">1.0</BindingParameter>  <!-- lambda strength -->
             </AdhesionInteractionMatrix>
          </Variables>
       </BindingFormula>
-      <NeighborOrder>4</NeighborOrder>  <!-- neighbororder 1 -->
+      <NeighborOrder>1</NeighborOrder>  <!-- neighbororder 4 -->
    </Plugin>
 
    <!-- Initial layout of cells in the form of rectangular slab

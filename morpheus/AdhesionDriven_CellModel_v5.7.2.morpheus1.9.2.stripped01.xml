@@ -97,7 +97,7 @@ added random seed so time doesn't determine randomness of initial cell positions
             </Rule>
             <Rule symbol-ref="ct1_membraneElasticity">
                 <Expression>if(time &lt; burn_in_time,ct1_membraneElasticity_init,
-  if(time > ct1_perturbation_time 
+  if(time > ct1_perturbation_time
   and ct1_membraneElasticity >= ct1_membraneElasticity_init
   and ct1_membraneElasticity &lt;= ct1_membraneElasticity_final,
     (1.0 / (1.0 + (pow(((time-ct1_perturbation_time)/ct1_k_half_hours),ct1_hill_n))))*(ct1_membraneElasticity_init-ct1_membraneElasticity_final) + ct1_membraneElasticity_final,
@@ -106,7 +106,7 @@ added random seed so time doesn't determine randomness of initial cell positions
             </Rule>
             <Rule symbol-ref="ct1_membraneElasticity_edge">
                 <Expression>if(time &lt; burn_in_time,ct1_membraneElasticity_edge_init,
-  if(time > ct1_perturbation_time 
+  if(time > ct1_perturbation_time
     and ct1_membraneElasticity_edge >= ct1_membraneElasticity_edge_init
     and ct1_membraneElasticity_edge &lt;= ct1_membraneElasticity_final_edge,
     (1.0 / (1.0 + (pow(((time-ct1_perturbation_time)/ct1_k_half_hours),ct1_hill_n))))*(ct1_membraneElasticity_edge_init-ct1_membraneElasticity_final_edge) + ct1_membraneElasticity_final_edge,
@@ -114,10 +114,11 @@ added random seed so time doesn't determine randomness of initial cell positions
 ))</Expression>
             </Rule>
             <Rule symbol-ref="ct1_area">
-                <Expression>if(time >burn_in_time,ct1_area_init,  <!-- bue: i am quit shure this should be time &lt; burn_in_time -->
- if( (ct1_area_init &lt; ct1_area_final) 
+                <!-- bue: i am quit shure time > burn_in_time should be time &lt; burn_in_time -->
+                <Expression>if(time &lt; burn_in_time,ct1_area_init,
+ if( (ct1_area_init &lt; ct1_area_final)
      and ct1_area &lt; ct1_area_final,
-ct1_area_init + 
+ct1_area_init +
 (ct1_area_final-ct1_area_init)*
 ((time-ct1_perturbation_time)/96),
 ct1_area_final)
@@ -125,9 +126,9 @@ ct1_area_final)
             </Rule>
             <Rule symbol-ref="ct1_area_edge">
                 <Expression>if(time &lt; burn_in_time,ct1_area_edge_init,
-  if((ct1_area_edge_init &lt; ct1_area_edge_final) 
+  if((ct1_area_edge_init &lt; ct1_area_edge_final)
      and ct1_area_edge &lt; ct1_area_edge_final,
-ct1_area_edge_init + 
+ct1_area_edge_init +
 (ct1_area_edge_final-ct1_area_edge_init)*
 ((time-ct1_perturbation_time)/96),
 ct1_area_edge_final)
@@ -156,7 +157,7 @@ ct1_area_edge_final)
         <System solver="euler" time-step="0.1" name="ct2_mechanics_updater">
             <Rule symbol-ref="ct2_adhesion">
                 <Expression>if(time &lt; burn_in_time,adhesion_init_ct2,
-  if(time > ct2_perturbation_time 
+  if(time > ct2_perturbation_time
   and ct2_adhesion >= adhesion_init_ct2
   and ct2_adhesion &lt;= ct2_adhesion_weak,
   (1.0 / (1.0 + (pow(((time-ct2_perturbation_time)/ct2_k_half_hours),ct2_hill_n))))*(adhesion_init_ct2-ct2_adhesion_weak) + ct2_adhesion_weak,
@@ -165,7 +166,7 @@ ct1_area_edge_final)
             </Rule>
             <Rule symbol-ref="ct2_membraneElasticity">
                 <Expression>if(time &lt; burn_in_time,ct2_membraneElasticity_init,
-  if(time > ct2_perturbation_time 
+  if(time > ct2_perturbation_time
   and ct2_membraneElasticity >= ct2_membraneElasticity_init
   and ct2_membraneElasticity &lt;= ct2_membraneElasticity_final,
     (1.0 / (1.0 + (pow(((time-ct2_perturbation_time)/ct2_k_half_hours),ct2_hill_n))))*
@@ -175,7 +176,7 @@ ct1_area_edge_final)
             </Rule>
             <Rule symbol-ref="ct2_membraneElasticity_edge">
                 <Expression>if(time &lt; burn_in_time,ct2_membraneElasticity_edge_init,
-  if(time > ct2_perturbation_time 
+  if(time > ct2_perturbation_time
   and ct2_membraneElasticity_edge >= ct2_membraneElasticity_edge_init
   and ct2_membraneElasticity_edge &lt;= ct2_membraneElasticity_final_edge,
     (1.0 / (1.0 + (pow(((time-ct2_perturbation_time)/ct2_k_half_hours),ct2_hill_n))))*(ct2_membraneElasticity_edge_init-ct2_membraneElasticity_final_edge) + ct2_membraneElasticity_final_edge,
@@ -195,7 +196,7 @@ ct1_area_edge_final)
                 <Expression>if(time &lt; burn_in_time,ct2_area_edge_init,
   if( (ct2_area_edge_init &lt; ct2_area_edge_final)
      and ct2_area_edge &lt; ct2_area_edge_final,
-    ct2_area_edge_init + 
+    ct2_area_edge_init +
     (ct2_area_edge_final-ct2_area_edge_init)*
     ((time-ct2_perturbation_time)/96),
   ct2_area_edge_final)
@@ -387,7 +388,7 @@ ct1_area_edge_final)
             <Property symbol="cadherin" value="ctall_medium_adhesion"/>
             <Property symbol="p" value="0"/>
             <Constant symbol="degp" value="0.0"/>
-            <!-- 
+            <!--
             <Property symbol="avgLikeNeighborCount" value="0"/>
             <Property symbol="avgLikeNeighborLength" value="0"/>
             -->
