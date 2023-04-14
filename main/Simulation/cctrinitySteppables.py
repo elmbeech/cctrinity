@@ -66,39 +66,27 @@ dd_cellline = {}  # cell mappings
 dd_cellline.update({'ROCK1-20': {  # bue: 20 percent rock1 expression level comapred to wild type.
     'adhesion_weak': 8, # graner: ((14 - 2) / 2) + 2 = 9; libby -85  # new data suggests 50% CDH1 expression
     'volume_final': 170,
-    #'volume_final_sd': 53.54,
     'volume_edge_final': 228,
-    #'volume_edge_final_sd': 60.06,
-    #'lambda_volume': 1.0, #  bue: same as init
-    'volumepsurface_final': 1.17,  # 1.17,  # was 1.37  # bue: give rock1 kd cells the higher tension because i got rid of dynamic lambda_surface
-    'volumepsurface_edge_final': 1.41,  #1.41,  # was 1.97  # bue: give rock 1 kd cells the higher tension because i got rid of dynamic lambda_surface
-    #'lambda_surface_final': 1.1,  # wt is 0.5 # bue: set to same as init
+    'volumepsurface_final': 1.17,  # was 1.37  # bue: give rock1 kd cells the higher tension because i got rid of dynamic lambda_surface
+    'volumepsurface_edge_final': 1.41,  # was 1.97  # bue: give rock 1 kd cells the higher tension because i got rid of dynamic lambda_surface
     'km_half_time': 46.78,
     'generation_time_final': 20
 }})
 dd_cellline.update({'wt': {  # bue: wild type expression level
     'adhesion_weak': 2,  # graner: 2; libby -100 # bue: wt has no weak adhesion wt is strong.
     'volume_final': 137,
-    #'volume_final_sd': 34.03,  # bue: sd, is this standard deviation?
     'volume_edge_final': 177,
-    #'volume_edge_final_sd': 49.66,
-    #'lambda_volume': 1.0,
-    'volumepsurface_final': 1.12,  # 1.12,
-    'volumepsurface_edge_final': 1.32,  # 1.32,
-    #'lambda_surface_final': 0.5,  # bue: same as init
+    'volumepsurface_final': 1.12,
+    'volumepsurface_edge_final': 1.32,
     'km_half_time': 48.28, # bue: how can they have km when there is littteraly no protein knocked down? it is just the CDH1 value, that the linear translation works!
     'generation_time_final': 20
 }})
 dd_cellline.update({'CDH1-0': {   # bue: zero percent cdh1 expression level comapred to wild type
     'adhesion_weak': 14,  # graner: 14; libby -70  # bue: sligthly more than adhesion to medium.
     'volume_final': 123,
-    #'volume_final_sd': 51.78,
     'volume_edge_final': 223,
-    #'volume_edge_final_sd': 57.96,
-    #'lambda_volume': 1.0,
-    'volumepsurface_final': 1.10,  # 1.10,
-    'volumepsurface_edge_final': 1.23,  # 1.23,
-    #'lambda_surface_final': 0.5,  # bue: same as init
+    'volumepsurface_final': 1.10,
+    'volumepsurface_edge_final': 1.23,
     'km_half_time': 48.28,  # time half expression occures after any knockdown.
     'generation_time_final': 18,
 }})
@@ -113,21 +101,15 @@ for r_express in er_cdh_express_fract : # bue: beause the same formula is used, 
     dd_cellline.update({s_cellline: {
         'adhesion_weak': None,
         'volume_final': None,
-        #'volume_final_sd': 51.78,
         'volume_edge_final': None,
-        #'volume_edge_final_sd': 57.96,
-        #'lambda_volume': 1.0, bue: same as init
         'volumepsurface_final': None,
         'volumepsurface_edge_final': None,
-        #'lambda_surface_final': 0.5,  # bue: same as init
         'km_half_time': 48.28,
         'generation_time_final': None,
     }})
     # update initalized cell line
-    #r_cdh1 = (100 - r_express) / 100  # fraction expression level compare to wt (relative mutatant decrease)
     r_cdh1 = r_express / 100  # fraction expression level compare to wt
     for s_label in ['adhesion_weak', 'volume_final', 'volume_edge_final', 'volumepsurface_final', 'volumepsurface_edge_final','generation_time_final']:
-        #dd_cellline[s_cellline][s_label] = dd_cellline['wt'][s_label] + (dd_cellline['CDH1-100'][s_label] - dd_cellline['wt'][s_label]) * r_cdh1
         dd_cellline[s_cellline][s_label] = dd_cellline['CDH1-0'][s_label] + (dd_cellline['wt'][s_label] - dd_cellline['CDH1-0'][s_label]) * r_cdh1
 
 # do surface calculation
@@ -137,9 +119,9 @@ for s_cellline, d_cell in dd_cellline.items():
 
 # initialization parameters
 volume_init = 157  # volume_edge_init = 177; volume_init = 137
-volumepsurface_init = 1.42  # 1.22  # volumepsurface_edge_init = 1.32; volumepsurface_init = 1.12
+volumepsurface_init = 1.22  # volumepsurface_edge_init = 1.32; volumepsurface_init = 1.12
 surface_init = volume_init / volumepsurface_init
-adhesion_init = 14  # bue: we don't want that they already start sorting, when they are just kocked down so we set it to the same as weak ct medium and medium medium adhesion
+adhesion_init = 16  # bue: we don't want that they already start sorting, when they are just kocked down so we set it to the same as weak ct medium and medium medium adhesion
 generation_time_init = 20
 
 # constantes
@@ -352,14 +334,14 @@ class GrowthSteppable(SteppableBasePy):
             self.plot_win_velocity.add_plot("experiment_time", style='dots', color='yellow', size=2)
 
         # text output time
-        self.msg_win_rudy = self.add_new_message_window(title='Rudy a message to you ...')
+        #self.msg_win_rudy = self.add_new_message_window(title='Rudy a message to you ...')  # bue: yet unavilable on nanohub.
 
     def step(self, mcs):
         # time in hour
         time = (mcs * r_hpmcs) + min(0, ct1_kd_time, ct2_kd_time)
         #print('die zeit:', mcs, time)
-        #self.msg_win1.clear()
-        self.msg_win_rudy.print(f"simulation time: {mcs}[mcs] {round(time, 3)}[h]")
+        #self.msg_win1.clear()  # bue: yet unavilable on nanohub.
+        #self.msg_win_rudy.print(f"simulation time: {mcs}[mcs] {round(time, 3)}[h]")  # bue: yet unavilable on nanohub.
 
         # reset variables
         lr_ct1_volume = []
@@ -390,8 +372,6 @@ class GrowthSteppable(SteppableBasePy):
             set_volume = None
             set_volumepsurface = None
             set_surface = None
-            #set_lambda_volume = None
-            #set_lambda_surface = None
             set_adhesion = None
 
             # get edge or not
@@ -406,30 +386,15 @@ class GrowthSteppable(SteppableBasePy):
 
             if (cell.type == self.CT1):
                 # ct1 adhesion
-                if (time < 0):
+                if (time < 0) or (time <= ct1_kd_time):
                     set_adhesion = adhesion_init
                 elif (time > ct1_kd_time and cell.dict['adhesion'] >= adhesion_init and cell.dict['adhesion'] <= dd_cellline[ct1]['adhesion_weak']):
                     set_adhesion = (1.0 / (1.0 + (((time - ct1_kd_time) / dd_cellline[ct1]['km_half_time'])**hill_n))) * (adhesion_init - dd_cellline[ct1]['adhesion_weak']) + dd_cellline[ct1]['adhesion_weak']
-                elif (time <= ct1_kd_time):
-                    set_adhesion = adhesion_init
                 else:
                     set_adhesion = dd_cellline[ct1]['adhesion_weak']
                 # plot
                 if (adhesion_verbose):
                     self.plot_win_adhesion.add_data_point("ct1_adhesion", x=mcs, y=set_adhesion)
-
-                # ct1 lambda_surface
-                #if (time < burn_in_time):
-                #    set_lambda_surface = lambda_surface_init
-                #elif (time > ct1_kd_time and cell.lambdaSurface >= lambda_surface_init and cell.lambdaSurface <= dd_cellline[ct1]['lambda_surface_final']):
-                #    set_lambda_surface = (1.0 / (1.0 + (((time - ct1_kd_time) / dd_cellline[ct1]['km_half_time'])**hill_n))) * (lambda_surface_init - dd_cellline[ct1]['lambda_surface_final']) + dd_cellline[ct1]['lambda_surface_final']
-                #elif (time <= ct1_kd_time):
-                #    set_lambda_surface = lambda_surface_init
-                #else:
-                #    set_lambda_surface = dd_cellline[ct1]['lambda_surface_final']
-                # plot
-                #if (surface_verbose):
-                #    self.plot_win_surface.add_data_point("ct1_lambda_surface", x=mcs, y=set_lambda_surface)
 
                 # if edge cell
                 if (b_edgecell > 0):
@@ -446,12 +411,10 @@ class GrowthSteppable(SteppableBasePy):
                         lr_ct1_volume_edge.append(cell.volume)
 
                     # ct1_volume_per_surface_edge and ct1_surface_edge
-                    if (time < 0):
+                    if (time < 0) or (time <= ct1_kd_time):
                         set_volumepsurface = volumepsurface_init
                     elif (time > ct1_kd_time and cell.dict['volumepsurface'] >= volumepsurface_init and cell.dict['volumepsurface'] <= dd_cellline[ct1]['volumepsurface_edge_final']):
                         set_volumepsurface = (1.0 / (1.0 + (((time - ct1_kd_time) / dd_cellline[ct1]['km_half_time'])**hill_n))) * (volumepsurface_init - dd_cellline[ct1]['volumepsurface_edge_final']) + dd_cellline[ct1]['volumepsurface_edge_final']
-                    elif (time <= ct1_kd_time):
-                        set_volumepsurface = volumepsurface_init
                     else:
                         set_volumepsurface = dd_cellline[ct1]['volumepsurface_edge_final']
                     set_surface = set_volume / set_volumepsurface
@@ -477,12 +440,10 @@ class GrowthSteppable(SteppableBasePy):
                         lr_ct1_volume.append(cell.volume)
 
                     # ct1_volume_per_surface and ct1_surface
-                    if (time < 0):
+                    if (time < 0) or (time <= ct1_kd_time):
                         set_volumepsurface = volumepsurface_init
                     elif (time > ct1_kd_time and cell.dict['volumepsurface'] >= volumepsurface_init and cell.dict['volumepsurface'] <= dd_cellline[ct1]['volumepsurface_final']):
                         set_volumepsurface = (1.0 / (1.0 + (((time - ct1_kd_time) / dd_cellline[ct1]['km_half_time'])**hill_n))) * (volumepsurface_init - dd_cellline[ct1]['volumepsurface_final']) + dd_cellline[ct1]['volumepsurface_final']
-                    elif (time <= ct1_kd_time):
-                        set_volumepsurface = volumepsurface_init
                     else:
                         set_volumepsurface = dd_cellline[ct1]['volumepsurface_final']
                     set_surface = set_volume / set_volumepsurface
@@ -500,30 +461,15 @@ class GrowthSteppable(SteppableBasePy):
 
             elif (cell.type == self.CT2):
                 # ct2_adhesion
-                if (time < 0):
+                if (time < 0) or (time <= ct2_kd_time):
                     set_adhesion = adhesion_init
                 elif (time > ct2_kd_time and cell.dict['adhesion'] >= adhesion_init and cell.dict['adhesion'] <= dd_cellline[ct2]['adhesion_weak']):
                     set_adhesion = (1.0 / (1.0 + (((time - ct2_kd_time) / dd_cellline[ct2]['km_half_time'])**hill_n))) * (adhesion_init - dd_cellline[ct2]['adhesion_weak']) + dd_cellline[ct2]['adhesion_weak']
-                elif (time <= ct2_kd_time):
-                    set_adhesion = adhesion_init
                 else:
                     set_adhesion = dd_cellline[ct2]['adhesion_weak']
                 # plot
                 if (adhesion_verbose):
                     self.plot_win_adhesion.add_data_point("ct2_adhesion", x=mcs, y=set_adhesion)
-
-                # ct2_lambda_surface
-                #if (time < burn_in_time):
-                #    set_lambda_surface = lambda_surface_init
-                #elif (time > ct2_kd_time and cell.lambdaSurface >= lambda_surface_init and cell.lambdaSurface <= dd_cellline[ct2]['lambda_surface_final']):
-                #    set_lambda_surface = (1.0 / (1.0 + (((time - ct2_kd_time) / dd_cellline[ct1]['km_half_time'])**hill_n))) * (lambda_surface_init - dd_cellline[ct2]['lambda_surface_final']) + dd_cellline[ct2]['lambda_surface_final']
-                #elif (time <= ct2_kd_time):
-                #    set_lambda_surface = lambda_surface_init
-                #else:
-                #    set_lambda_surface = dd_cellline[ct2]['lambda_surface_final']
-                # plot
-                #if (surface_verbose):
-                #    self.plot_win_surface.add_data_point("ct2_lambda_surface", x=mcs, y=set_lambda_surface)
 
                 # if edge cell
                 if (b_edgecell > 0):
@@ -540,12 +486,10 @@ class GrowthSteppable(SteppableBasePy):
                         lr_ct2_volume_edge.append(cell.volume)
 
                     # ct2_volume_per_surface_edge and ct2_surface_edge
-                    if (time < 0):
+                    if (time < 0) or (time <= ct2_kd_time):
                         set_volumepsurface = volumepsurface_init
                     elif (time > ct2_kd_time and cell.dict['volumepsurface'] >= volumepsurface_init and cell.dict['volumepsurface'] <= dd_cellline[ct2]['volumepsurface_edge_final']):
                         set_volumepsurface = (1.0 / (1.0 + (((time - ct2_kd_time) / dd_cellline[ct2]['km_half_time'])**hill_n))) * (volumepsurface_init - dd_cellline[ct2]['volumepsurface_edge_final']) + dd_cellline[ct2]['volumepsurface_edge_final']
-                    elif (time <= ct2_kd_time):
-                        set_volumepsurface = volumepsurface_init
                     else:
                         set_volumepsurface = dd_cellline[ct2]['volumepsurface_edge_final']
                     set_surface = set_volume / set_volumepsurface
@@ -571,12 +515,10 @@ class GrowthSteppable(SteppableBasePy):
                         lr_ct2_volume.append(cell.volume)
 
                     # ct2_volume per surface
-                    if (time < 0):
+                    if (time < 0) or (time <= ct2_kd_time):
                         set_volumepsurface = volumepsurface_init
                     elif (time > ct2_kd_time and cell.dict['volumepsurface'] >= volumepsurface_init and cell.dict['volumepsurface'] <= dd_cellline[ct2]['volumepsurface_final']):
                         set_volumepsurface = (1.0 / (1.0 + (((time - ct2_kd_time) / dd_cellline[ct2]['km_half_time'])**hill_n))) * (volumepsurface_init - dd_cellline[ct2]['volumepsurface_final']) + dd_cellline[ct2]['volumepsurface_final']
-                    elif (time <= ct2_kd_time):
-                        set_volumepsurface = volumepsurface_init
                     else:
                         set_volumepsurface = dd_cellline[ct2]['volumepsurface_final']
                     set_surface = set_volume / set_volumepsurface
@@ -602,11 +544,9 @@ class GrowthSteppable(SteppableBasePy):
 
             # volume
             cell.targetVolume = int(set_volume)
-            #cell.lambdaVolume = lambda_volume_int  # set_lambda_volume  bue: lambda_volume undergoes no calcualtion.
             # surface
             cell.dict['volumepsurface'] = set_volumepsurface
             cell.targetSurface = int(set_surface)
-            #cell.lambdaSurface = set_lambda_surface
             # adhesion
             cell.dict['adhesion'] = set_adhesion
             self.adhesionFlexPlugin.setAdhesionMoleculeDensity(cell, 'cdh', cell.dict['adhesion'])
