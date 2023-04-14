@@ -62,18 +62,18 @@
    <!-- Adhesion energy is a function of two cells in ocntact. the functional form is specified by the user -->
    <Plugin Name="AdhesionFlex">
       <AdhesionMolecule Molecule="cdh"/>
-      <AdhesionMoleculeDensity CellType="Medium" Density="0.0" Molecule="cdh"/>
-      <AdhesionMoleculeDensity CellType="ct1" Density="-100.0" Molecule="cdh"/>
-      <AdhesionMoleculeDensity CellType="ct2" Density="-100.0" Molecule="cdh"/>
+      <AdhesionMoleculeDensity CellType="Medium" Density="16.0" Molecule="cdh"/>  <!-- graner: 16, libby: 0 -->
+      <AdhesionMoleculeDensity CellType="ct1" Density="2.0" Molecule="cdh"/>  <!-- graner: 2, libby: -100 -->
+      <AdhesionMoleculeDensity CellType="ct2" Density="2.0" Molecule="cdh"/>  <!-- graner: 2, libby: -100 -->
       <BindingFormula Name="Cadherin">
-         <Formula>max(Molecule1,Molecule2)</Formula>  <!-- usually min but max in the paper -->
+         <Formula>min(Molecule1,Molecule2)</Formula>  <!-- usually min, libby: max -->
          <Variables>
             <AdhesionInteractionMatrix>
                <BindingParameter id="lamdaAdhesion" Molecule1="cdh" Molecule2="cdh">1.0</BindingParameter>  <!-- lambda strength -->
             </AdhesionInteractionMatrix>
          </Variables>
       </BindingFormula>
-      <NeighborOrder>1</NeighborOrder>  <!-- neighbororder 4 -->
+      <NeighborOrder>4</NeighborOrder>  <!-- neighbororder 4 -->
    </Plugin>
 
    <!-- Initial layout of cells in the form of rectangular slab
