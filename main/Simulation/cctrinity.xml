@@ -62,7 +62,7 @@
    <!-- Adhesion energy is a function of two cells in ocntact. the functional form is specified by the user -->
    <Plugin Name="AdhesionFlex">
       <AdhesionMolecule Molecule="cdh"/>
-      <AdhesionMoleculeDensity CellType="Medium" Density="16.0" Molecule="cdh"/>  <!-- graner: 16, libby: 0 -->
+      <AdhesionMoleculeDensity id="mediumAdhesion" CellType="Medium" Density="32.0" Molecule="cdh"/>  <!-- graner: 16, libby: 0 -->
       <AdhesionMoleculeDensity CellType="ct1" Density="2.0" Molecule="cdh"/>  <!-- graner: 2, libby: -100 -->
       <AdhesionMoleculeDensity CellType="ct2" Density="2.0" Molecule="cdh"/>  <!-- graner: 2, libby: -100 -->
       <BindingFormula Name="Cadherin">
