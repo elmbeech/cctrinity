@@ -1,13 +1,15 @@
-# python libraries
+####################
+# python libraries #
+####################
 from cc3d.core.PySteppables import *
 import numpy as np
 import random
 import sys
 
 
-#################################
-# celltype and model parameters #
-#################################
+###########################
+# celltype and constantes #
+###########################
 
 # bue 2023-0414: take cell adhesion values form the graner glazer 1992 publication, because they actually work.
 # ct-medium the weakest: 16
@@ -73,6 +75,9 @@ class GrowthSteppable(SteppableBasePy):
     def start(self):
         pass
 
+    ###################
+    # input parameter #
+    ###################
     def add_steering_panel(self):
         # define input variables, specify cell type
         self.add_steering_param(name='ct1', val='WT', enum=['WT','CDH1','ROCK1-20'], widget_name='combobox')
@@ -171,22 +176,34 @@ class GrowthSteppable(SteppableBasePy):
             d_cell['surface_final'] = d_cell['volume_final'] / d_cell['volumepsurface_final']
             d_cell['surface_edge_final'] = d_cell['volume_edge_final'] / d_cell['volumepsurface_edge_final']
 
+    ############
+    # stepable #
+    ############
     def step(self, mcs):
+
+        ##############
+        # initialize #
+        ##############
         if (mcs==0):
-            # hold
+            ########################
+            # get input parameters #
+            ########################
             while self.get_steering_param('processing') != 'GO!':
                pass
             self.process_steering_panel_data()
             ct1_seed = self.get_steering_param('ct1_seed')
             ct2_seed = self.get_steering_param('ct2_seed')
 
+            ###########
+            # seeding #
+            ###########
             # calulate domain center and x60 y20 shape
             i_x = self.dim.x // 2  # floor integer
             i_y = self.dim.y // 2
             i_z = 0
             li_x = list(range(i_x-30, i_x+31))
             li_y = list(range(i_y-10, i_y+11))
-    
+
             # random seeding
             ct1_drop = ct1_seed
             ct2_drop = ct2_seed
@@ -228,7 +245,7 @@ class GrowthSteppable(SteppableBasePy):
                 # pass
                 else:
                     pass
-    
+
             # initialize cell parameters
             for cell in self.cell_list:
                 # ct1
@@ -267,13 +284,16 @@ class GrowthSteppable(SteppableBasePy):
                 cell.lambdaVecX = - cell.dict['propulsiveforce'] * cell.dict['dirx']
                 cell.lambdaVecY = - cell.dict['propulsiveforce'] * cell.dict['diry']
                 cell.lambdaVecZ = - cell.dict['propulsiveforce'] * cell.dict['diry']
-    
+
+            ################
+            # plot canavas #
+            ################
             # plot volumne
             if (volume_verbose):
                 self.plot_win_volume = self.add_new_plot_window(
                     title='cell volume evolution.',
                     x_axis_title='monte_carlo_step',
-                    y_axis_title='volume',
+                    y_axis_title='variables',
                     x_scale_type='linear',
                     y_scale_type='linear',
                     grid=True,
@@ -289,13 +309,13 @@ class GrowthSteppable(SteppableBasePy):
                 self.plot_win_volume.add_plot("ct2_volume_edge", style='dots', color='red', size=2)
                 self.plot_win_volume.add_plot("lambda_volume", style='dots', color='lime', size=2)
                 self.plot_win_volume.add_plot("experiment_time", style='dots', color='yellow', size=2)
-    
+
             # plot surface
             if (surface_verbose):
                 self.plot_win_surface = self.add_new_plot_window(
                     title='cell surface evolution.',
                     x_axis_title='monte_carlo_step',
-                    y_axis_title='surface',
+                    y_axis_title='variables',
                     x_scale_type='linear',
                     y_scale_type='linear',
                     grid=True,
@@ -311,13 +331,13 @@ class GrowthSteppable(SteppableBasePy):
                 self.plot_win_surface.add_plot("ct2_surface_edge", style='dots', color='red', size=2)
                 self.plot_win_surface.add_plot("lambda_surface", style='dots', color='green', size=2)
                 self.plot_win_surface.add_plot("experiment_time", style='dots', color='yellow', size=2)
-    
+
             # plot surface per volume
             if (volpsurf_verbose):
                 self.plot_win_volpsurf = self.add_new_plot_window(
                     title='cell volume per surface evolution.',
                     x_axis_title='monte_carlo_step',
-                    y_axis_title='volume / surface',
+                    y_axis_title='variables',
                     x_scale_type='linear',
                     y_scale_type='linear',
                     grid=True,
@@ -332,13 +352,13 @@ class GrowthSteppable(SteppableBasePy):
                 self.plot_win_volpsurf.add_plot("ct1_volume_per_surface_edge", style='dots', color='orange', size=2)
                 self.plot_win_volpsurf.add_plot("ct2_volume_per_surface_edge", style='dots', color='red', size=2)
                 self.plot_win_volpsurf.add_plot("experiment_time", style='dots', color='yellow', size=2)
-    
+
             # plot adhesion
             if (adhesion_verbose):
                 self.plot_win_adhesion = self.add_new_plot_window(
-                    title='cell adhesion evolution.',
+                    title='cell adhesion energy evolution.',
                     x_axis_title='monte_carlo_step',
-                    y_axis_title='adhesion',
+                    y_axis_title='variables',
                     x_scale_type='linear',
                     y_scale_type='linear',
                     grid=True,
@@ -351,7 +371,7 @@ class GrowthSteppable(SteppableBasePy):
                 self.plot_win_adhesion.add_plot("lambda_adhesion", style='dots', color='lime', size=2)
                 # time
                 self.plot_win_adhesion.add_plot("experiment_time", style='dots', color='yellow', size=2)
-    
+
             # plot contact
             if (contact_verbose):
                 self.plot_win_contact = self.add_new_plot_window(
@@ -372,13 +392,13 @@ class GrowthSteppable(SteppableBasePy):
                 self.plot_win_contact.add_plot("ct2_ct2", style='lines', color='blue', size=2)
                 # time
                 self.plot_win_contact.add_plot("experiment_time", style='dots', color='yellow', size=2)
-    
+
             # plot velocity
             if (velocity_verbose):
                 self.plot_win_velocity = self.add_new_plot_window(
                     title='cell velocity evolution.',
                     x_axis_title='monte_carlo_step',
-                    y_axis_title='adhesion',
+                    y_axis_title='variables',
                     x_scale_type='linear',
                     y_scale_type='linear',
                     grid=True,
@@ -389,10 +409,14 @@ class GrowthSteppable(SteppableBasePy):
                 self.plot_win_velocity.add_plot("lambda_velocity", style='dots', color='lime', size=2)
                 self.plot_win_velocity.add_plot("persistence_velocity", style='dots', color='cyan', size=2)
                 self.plot_win_velocity.add_plot("experiment_time", style='dots', color='yellow', size=2)
-    
+
             # text output time
             #self.msg_win_rudy = self.add_new_message_window(title='Rudy a message to you ...')  # bue: yet unavilable on nanohub.
 
+
+        ##############
+        # processing #
+        ##############
         # time in hour
         time = (mcs * r_hpmcs) + min(0, ct1_kd_time, ct2_kd_time)
         #print('die zeit:', mcs, time)
@@ -625,7 +649,9 @@ class GrowthSteppable(SteppableBasePy):
                         sys.exit(f"Error: unknowen cell.id with medium contact detected: {cell.type}")
             #print(f"cell.id: {cell.id}\t{sorted(di_contact.items())}")
 
-        # plot means constantes and time
+        ################
+        # update plots #
+        ################
         # volume
         if (volume_verbose):
             self.plot_win_volume.add_data_point("ct1_volume_mean", x=mcs, y=np.mean(lr_ct1_volume))
@@ -695,9 +721,15 @@ class MitosisSteppable(MitosisSteppableBase):
     def start(self):
         pass
 
+    ############
+    # stepable #
+    ############
     def step(self, mcs):
         if (mcs==0):
-            # plot window time
+            ################
+            # plot canavas #
+            ################
+            # time
             if (time_verbose):
                 self.plot_win_time = self.add_new_plot_window(
                     title='time evolution',
@@ -712,13 +744,15 @@ class MitosisSteppable(MitosisSteppableBase):
                 self.plot_win_time.add_plot("generation_time", style='dots', color='red', size=2)
                 self.plot_win_time.add_plot("division_time", style='dots', color='orange', size=2)
 
-        ########
-        # time #
-        ########
+        ##############
+        # processing #
+        ##############
         # time in hour
         time = (mcs * r_hpmcs) + min(0, ct1_kd_time, ct2_kd_time)
 
-        # get cells to devide
+        #######################
+        # get cells to divide #
+        #######################
         cells_to_divide=[]
         for cell in self.cell_list:
             set_generation_time = None
@@ -762,7 +796,10 @@ class MitosisSteppable(MitosisSteppableBase):
             if (time_verbose) and (mcs % 8):
                 self.plot_win_time.add_data_point("division_time", x=mcs, y=cell.dict['dc'])
 
-        # plot experiment time in hour and cell generation time
+        ################
+        # update plots #
+        ################
+        # experiment time in hour and cell generation time
         if (time_verbose) and (mcs % 8):
             self.plot_win_time.add_data_point("experiment_time", x=mcs, y=time)
             self.plot_win_time.add_data_point("generation_time", x=mcs, y=cell.dict['dt'])
