@@ -52,7 +52,7 @@ dd_cellline.update({'ROCK1-20': {  # bue: 20 percent rock1 expression level coma
 
 # constantes
 adhesion_min = 0  # bue: we don't want that they already start sorting, when they are just kocked down so we set it to the same as weak ct medium and medium medium adhesion
-hill_n = 5.0  # hillpower
+hill_n = 2.0  # hillpower
 lambda_volume = 4.0 # 1.0
 lambda_surface = 4.0 # 0.5
 lambda_velocity = 9  # 9
@@ -90,8 +90,8 @@ class GrowthSteppable(SteppableBasePy):
         self.add_steering_param(name='ct1_cdh_express_fract', val=100, min_val=0, max_val=100, widget_name='slider')
         self.add_steering_param(name='ct2_cdh_express_fract', val=100, min_val=0, max_val=100, widget_name='slider')
         # knock down time {-144 .. 120}  # 96
-        self.add_steering_param(name='ct1_kd_time', val=-6, min_val=-96, max_val=96, widget_name='slider')
-        self.add_steering_param(name='ct2_kd_time', val=-6, min_val=-96, max_val=96, widget_name='slider')
+        self.add_steering_param(name='ct1_kd_time', val=0, min_val=-96, max_val=96, widget_name='slider')
+        self.add_steering_param(name='ct2_kd_time', val=0, min_val=-96, max_val=96, widget_name='slider')
         # seeding
         self.add_steering_param(name='ct1_seed', val=50, min_val=0, max_val=100, widget_name='slider')
         self.add_steering_param(name='ct2_seed', val=50, min_val=0, max_val=100, widget_name='slider')
