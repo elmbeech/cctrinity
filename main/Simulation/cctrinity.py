@@ -1,7 +1,6 @@
 # library
 from cc3d import CompuCellSetup
-from cctrinitySteppables import GrowthSteppable
-from cctrinitySteppables import MitosisSteppable
+from cctrinitySteppables import GrowthSteppable, MitosisSteppable
 
 # register steppable
 CompuCellSetup.register_steppable(steppable=GrowthSteppable(frequency=1))

@@ -1,6 +1,7 @@
 ####################
 # python libraries #
 ####################
+
 from cc3d.core.PySteppables import *
 import numpy as np
 import random
@@ -11,43 +12,46 @@ import sys
 # celltype and constantes #
 ###########################
 
-# bue 2023-0414: take cell adhesion values form the graner glazer 1992 publication, because they actually work.
-# ct-medium the weakest: 16
-# ct-ct weak: 14
-# ct-ct strong: 2
-adhesion_max = 2
+# bue 2023-04-14: take cell contact energy values form the graner glazer 1992 publication, because they actually work.
+# bue 2023-04-14: multipy the graner glazer 1992 values by two, because in this study the adhesion difference is dynamic, caused by tempora knockdown sowhen in the simulation time.
+# bue 2023-04-21: change contact energy values form positive to negative, to make adhesion independent from the surface length (receptor desnity is independent form membran length).
+# bue 2023-04-21: transform contact energy into adhesion.
+# ct-medium the weakest: 16 -> 0
+# ct-ct weak: 14 -> -2 -> +2 (2*2 = 4)
+# ct-ct strong: 2 -> -14 -> +14 (2*2 = 28)
+adhesion_max = 28
 
 dd_cellline = {}  # cell mappings
 dd_cellline.update({'WT': {  # bue: wild type expression level
     'adhesion_min': adhesion_max,  # graner: 2; libby -100 # bue: wt has no weak adhesion wt is strong.
-    'volume_final': 137,
-    'volume_edge_final': 177,
-    'volumepsurface_final': 1.12,
-    'volumepsurface_edge_final': 1.32,
+    'volume': 137,
+    'volume_edge': 177,
+    'surfacepvolume': 1.12,
+    'surfacepvolume_edge': 1.32,
     'km_half_time': 48.28, # bue: how can they have km when there is littteraly no protein knocked down? it is just the CDH1 value, that the linear translation works!
-    'generation_time_final': 20
+    'generation_time': 20,
 }})
 dd_cellline.update({'CDH1-0': {   # bue: zero percent cdh1 expression level comapred to wild type
-    'adhesion_min': 28,  # graner: 14; libby -70  # bue: sligthly more than adhesion to medium.
-    'volume_final': 123,
-    'volume_edge_final': 223,
-    'volumepsurface_final': 1.10,
-    'volumepsurface_edge_final': 1.23,
+    'adhesion_min': 4,  # graner: 14; libby -70  # bue: sligthly more than adhesion to medium.
+    'volume': 123,
+    'volume_edge': 223,
+    'surfacepvolume': 1.10,
+    'surfacepvolume_edge': 1.23,
     'km_half_time': 48.28,  # time half expression occures after any knockdown.
-    'generation_time_final': 18,
+    'generation_time': 18,
 }})
 dd_cellline.update({'ROCK1-20': {  # bue: 20 percent rock1 expression level comapred to wild type.
-    'adhesion_min': 16, # graner: ((14 - 2) / 2) + 2 = 8; libby -85  # new data suggests 50% CDH1 expression
-    'volume_final': 170,
-    'volume_edge_final': 228,
-    'volumepsurface_final': 1.17,  # was 1.37  # bue: give rock1 kd cells the higher tension because i got rid of dynamic lambda_surface
-    'volumepsurface_edge_final': 1.41,  # was 1.97  # bue: give rock 1 kd cells the higher tension because i got rid of dynamic lambda_surface
+    'adhesion_min': 8.8, # 4 + (28 - 4) * 0.2 = 14; libby -85  # new data suggests 50% CDH1 expression
+    'volume': 170,
+    'volume_edge': 228,
+    'surfacepvolume': 1.17,  # was 1.37  # bue: give rock1 kd cells the higher tension because i got rid of dynamic lambda_surface
+    'surfacepvolume_edge': 1.41,  # was 1.97  # bue: give rock 1 kd cells the higher tension because i got rid of dynamic lambda_surface
     'km_half_time': 46.78,
-    'generation_time_final': 20
+    'generation_time': 20
 }})
 
 # constantes
-adhesion_init = 32  # bue: we don't want that they already start sorting, when they are just kocked down so we set it to the same as weak ct medium and medium medium adhesion
+adhesion_min = 0  # bue: we don't want that they already start sorting, when they are just kocked down so we set it to the same as weak ct medium and medium medium adhesion
 hill_n = 5.0  # hillpower
 lambda_volume = 4.0 # 1.0
 lambda_surface = 4.0 # 0.5
@@ -94,7 +98,7 @@ class GrowthSteppable(SteppableBasePy):
         # plotting windows
         self.add_steering_param(name='time_plot', val='off', enum=['off','on'], widget_name='pull-down')
         self.add_steering_param(name='volume_plot', val='off', enum=['off','on'], widget_name='pull-down')
-        self.add_steering_param(name='volpsurf_plot', val='off', enum=['off','on'], widget_name='pull-down')
+        self.add_steering_param(name='surfpvol_plot', val='off', enum=['off','on'], widget_name='pull-down')
         self.add_steering_param(name='surface_plot', val='off', enum=['off','on'], widget_name='pull-down')
         self.add_steering_param(name='adhesion_plot', val='on', enum=['off','on'], widget_name='pull-down')
         self.add_steering_param(name='contact_plot', val='on', enum=['off','on'], widget_name='pull-down')
@@ -123,14 +127,14 @@ class GrowthSteppable(SteppableBasePy):
         # plotwindows
         global time_verbose
         global volume_verbose
-        global volpsurf_verbose
+        global surfpvol_verbose
         global surface_verbose
         global adhesion_verbose
         global contact_verbose
         global velocity_verbose
         time_verbose = False
         volume_verbose = False
-        volpsurf_verbose = False
+        surfpvol_verbose = False
         surface_verbose = False
         adhesion_verbose = False
         contact_verbose = False
@@ -139,8 +143,8 @@ class GrowthSteppable(SteppableBasePy):
             time_verbose = True
         if self.get_steering_param('volume_plot') == 'on':
             volume_verbose = True
-        if self.get_steering_param('volpsurf_plot') == 'on':
-            volpsurf_verbose = True
+        if self.get_steering_param('surfpvol_plot') == 'on':
+            surfpvol_verbose = True
         if self.get_steering_param('surface_plot') == 'on':
             surface_verbose = True
         if self.get_steering_param('adhesion_plot') == 'on':
@@ -159,22 +163,22 @@ class GrowthSteppable(SteppableBasePy):
                 # initialize cell line
                 dd_cellline.update({s_cellline: {
                     'adhesion_min': None,
-                    'volume_final': None,
-                    'volume_edge_final': None,
-                    'volumepsurface_final': None,
-                    'volumepsurface_edge_final': None,
+                    'volume': None,
+                    'volume_edge': None,
+                    'surfacepvolume': None,
+                    'surfacepvolume_edge': None,
                     'km_half_time': 48.28,  # same as CDH1-0
-                    'generation_time_final': None,
+                    'generation_time': None,
                 }})
                 # update initalized cell line
                 r_cdh1 = r_express / 100  # fraction expression level compare to wt
-                for s_label in ['adhesion_min', 'volume_final', 'volume_edge_final', 'volumepsurface_final', 'volumepsurface_edge_final','generation_time_final']:
+                for s_label in ['adhesion_min', 'volume', 'volume_edge', 'surfacepvolume', 'surfacepvolume_edge','generation_time']:
                     dd_cellline[s_cellline][s_label] = dd_cellline['CDH1-0'][s_label] + (dd_cellline['WT'][s_label] - dd_cellline['CDH1-0'][s_label]) * r_cdh1
 
         # do surface calculation
         for s_cellline, d_cell in dd_cellline.items():
-            d_cell['surface_final'] = d_cell['volume_final'] / d_cell['volumepsurface_final']
-            d_cell['surface_edge_final'] = d_cell['volume_edge_final'] / d_cell['volumepsurface_edge_final']
+            d_cell['surface'] = d_cell['volume'] / d_cell['surfacepvolume']
+            d_cell['surface_edge'] = d_cell['volume_edge'] / d_cell['surfacepvolume_edge']
 
     ############
     # stepable #
@@ -251,30 +255,30 @@ class GrowthSteppable(SteppableBasePy):
                 # ct1
                 if (cell.type == self.CT1):
                     # time
-                    cell.dict['dt'] = dd_cellline[ct1]['generation_time_final']
-                    cell.dict['dc'] = np.random.uniform(0.0, dd_cellline[ct1]['generation_time_final'] + r_hpmcs)  # set division time counter
+                    cell.dict['dt'] = dd_cellline[ct1]['generation_time']
+                    cell.dict['dc'] = np.random.uniform(0.0, dd_cellline[ct1]['generation_time'] + r_hpmcs)  # set division time counter
                     # volume
-                    cell.targetVolume = dd_cellline[ct1]['volume_final']
+                    cell.targetVolume = dd_cellline[ct1]['volume']
                     cell.lambdaVolume = lambda_volume
                     # surface
-                    cell.targetSurface = dd_cellline[ct1]['volume_final'] / dd_cellline[ct1]['volumepsurface_final']
+                    cell.targetSurface = dd_cellline[ct1]['volume'] / dd_cellline[ct1]['surfacepvolume']
                     cell.lambdaSurface = lambda_surface
                 # ct2
                 elif (cell.type == self.CT2):
                     # time
-                    cell.dict['dt'] = dd_cellline[ct2]['generation_time_final']
-                    cell.dict['dc'] = np.random.uniform(0.0, dd_cellline[ct2]['generation_time_final'] + r_hpmcs)  # set division time counter
+                    cell.dict['dt'] = dd_cellline[ct2]['generation_time']
+                    cell.dict['dc'] = np.random.uniform(0.0, dd_cellline[ct2]['generation_time'] + r_hpmcs)  # set division time counter
                     # volume
-                    cell.targetVolume = dd_cellline[ct2]['volume_final']
+                    cell.targetVolume = dd_cellline[ct2]['volume']
                     cell.lambdaVolume = lambda_volume
                     # surface
-                    cell.targetSurface = dd_cellline[ct2]['volume_final'] / dd_cellline[ct2]['volumepsurface_final']
+                    cell.targetSurface = dd_cellline[ct2]['volume'] / dd_cellline[ct2]['surfacepvolume']
                     cell.lambdaSurface = lambda_surface
                 # ct error
                 else:
                     sys.exit(f"unknowen cell type detetced: {cell.type}")
                 # adhesion
-                self.adhesionFlexPlugin.setAdhesionMoleculeDensity(cell, 'cdh', adhesion_init)
+                self.adhesionFlexPlugin.setAdhesionMoleculeDensity(cell, 'cdh', adhesion_min)
                 # velocity
                 cell.dict['propulsiveforce'] = lambda_velocity
                 cell.dict['alpha'] = persistence_velocity
@@ -299,15 +303,11 @@ class GrowthSteppable(SteppableBasePy):
                     grid=True,
                     config_options={'legend': True},
                 )
-                self.plot_win_volume.add_plot("ct1_volume_mean", style='lines', color='cyan', size=2)
-                self.plot_win_volume.add_plot("ct2_volume_mean", style='lines', color='blue', size=2)
-                self.plot_win_volume.add_plot("ct1_volume_edge_mean", style='lines', color='orange', size=2)
-                self.plot_win_volume.add_plot("ct2_volume_edge_mean", style='lines', color='red', size=2)
-                self.plot_win_volume.add_plot("ct1_volume", style='dots', color='cyan', size=2)
-                self.plot_win_volume.add_plot("ct2_volume", style='dots', color='blue', size=2)
-                self.plot_win_volume.add_plot("ct1_volume_edge", style='dots', color='orange', size=2)
-                self.plot_win_volume.add_plot("ct2_volume_edge", style='dots', color='red', size=2)
-                self.plot_win_volume.add_plot("lambda_volume", style='dots', color='lime', size=2)
+                self.plot_win_volume.add_plot("ct1_target_volume_mean", style='lines', color='blue', size=3)
+                self.plot_win_volume.add_plot("ct1_volume_mean", style='dots', color='cyan', size=3)
+                self.plot_win_volume.add_plot("ct2_target_volume_mean", style='lines', color='red', size=3)
+                self.plot_win_volume.add_plot("ct2_volume_mean", style='dots', color='orange', size=3)
+                self.plot_win_volume.add_plot("lambda_volume", style='dots', color='lime', size=3)
                 self.plot_win_volume.add_plot("experiment_time", style='dots', color='yellow', size=2)
 
             # plot surface
@@ -321,20 +321,16 @@ class GrowthSteppable(SteppableBasePy):
                     grid=True,
                     config_options={'legend': True},
                 )
-                self.plot_win_surface.add_plot("ct1_surface_mean", style='lines', color='cyan', size=2)
-                self.plot_win_surface.add_plot("ct2_surface_mean", style='lines', color='blue', size=2)
-                self.plot_win_surface.add_plot("ct1_surface_edge_mean", style='lines', color='orange', size=2)
-                self.plot_win_surface.add_plot("ct2_surface_edge_mean", style='lines', color='red', size=2)
-                self.plot_win_surface.add_plot("ct1_surface", style='dots', color='cyan', size=2)
-                self.plot_win_surface.add_plot("ct2_surface", style='dots', color='blue', size=2)
-                self.plot_win_surface.add_plot("ct1_surface_edge", style='dots', color='orange', size=2)
-                self.plot_win_surface.add_plot("ct2_surface_edge", style='dots', color='red', size=2)
-                self.plot_win_surface.add_plot("lambda_surface", style='dots', color='green', size=2)
+                self.plot_win_surface.add_plot("ct1_target_surface_mean", style='lines', color='blue', size=3)
+                self.plot_win_surface.add_plot("ct1_surface_mean", style='dots', color='cyan', size=3)
+                self.plot_win_surface.add_plot("ct2_target_surface_mean", style='lines', color='red', size=3)
+                self.plot_win_surface.add_plot("ct2_surface_mean", style='dots', color='orange', size=3)
+                self.plot_win_surface.add_plot("lambda_surface", style='dots', color='lime', size=3)
                 self.plot_win_surface.add_plot("experiment_time", style='dots', color='yellow', size=2)
 
             # plot surface per volume
-            if (volpsurf_verbose):
-                self.plot_win_volpsurf = self.add_new_plot_window(
+            if (surfpvol_verbose):
+                self.plot_win_surfpvol = self.add_new_plot_window(
                     title='cell volume per surface evolution.',
                     x_axis_title='monte_carlo_step',
                     y_axis_title='variables',
@@ -343,15 +339,23 @@ class GrowthSteppable(SteppableBasePy):
                     grid=True,
                     config_options={'legend': True},
                 )
-                self.plot_win_volpsurf.add_plot("ct1_volume_per_surface_mean", style='lines', color='cyan', size=2)
-                self.plot_win_volpsurf.add_plot("ct2_volume_per_surface_mean", style='lines', color='blue', size=2)
-                self.plot_win_volpsurf.add_plot("ct1_volume_per_surface_edge_mean", style='lines', color='orange', size=2)
-                self.plot_win_volpsurf.add_plot("ct2_volume_per_surface_edge_mean", style='lines', color='red', size=2)
-                self.plot_win_volpsurf.add_plot("ct1_volumepsurface", style='dots', color='cyan', size=2)
-                self.plot_win_volpsurf.add_plot("ct2_volumepsurface", style='dots', color='blue', size=2)
-                self.plot_win_volpsurf.add_plot("ct1_volume_per_surface_edge", style='dots', color='orange', size=2)
-                self.plot_win_volpsurf.add_plot("ct2_volume_per_surface_edge", style='dots', color='red', size=2)
-                self.plot_win_volpsurf.add_plot("experiment_time", style='dots', color='yellow', size=2)
+                self.plot_win_surfpvol.add_plot("ct1_surface_per_volume_mean", style='lines', color='blue', size=3)
+                self.plot_win_surfpvol.add_plot("ct2_surface_per_volume_mean", style='lines', color='red', size=3)
+                self.plot_win_surfpvol.add_plot("experiment_time", style='dots', color='yellow', size=2)
+
+                self.plot_win_volvsurf = self.add_new_plot_window(
+                    title='volume versus surface.',
+                    x_axis_title='volume',
+                    y_axis_title='surface',
+                    x_scale_type='linear',
+                    y_scale_type='linear',
+                    grid=True,
+                    config_options={'legend': True},
+                )
+                self.plot_win_volvsurf.add_plot("ct1_target_volume_versus_surface_mean", style='dots', color='blue', size=4)
+                self.plot_win_volvsurf.add_plot("ct1_volume_versus_surface_mean", style='dots', color='cyan', size=4)
+                self.plot_win_volvsurf.add_plot("ct2_target_volumet_versus_surface_mean", style='dots', color='red', size=4)
+                self.plot_win_volvsurf.add_plot("ct2_volume_versus_surface_mean", style='dots', color='orange', size=4)
 
             # plot adhesion
             if (adhesion_verbose):
@@ -364,11 +368,11 @@ class GrowthSteppable(SteppableBasePy):
                     grid=True,
                     config_options={'legend': True},
                 )
-                self.plot_win_adhesion.add_plot("medium_adhesion", style='dots', color='maroon', size=2)
-                self.plot_win_adhesion.add_plot("ct1_adhesion", style='dots', color='cyan', size=2)
-                self.plot_win_adhesion.add_plot("ct2_adhesion", style='dots', color='blue', size=2)
-                self.plot_win_adhesion.add_plot("wt_adhesion", style='dots', color='teal', size=2)
-                self.plot_win_adhesion.add_plot("lambda_adhesion", style='dots', color='lime', size=2)
+                self.plot_win_adhesion.add_plot("medium_adhesion", style='dots', color='maroon', size=3)
+                self.plot_win_adhesion.add_plot("wt_adhesion", style='dots', color='magenta', size=3)
+                self.plot_win_adhesion.add_plot("ct1_adhesion_mean", style='dots', color='cyan', size=3)
+                self.plot_win_adhesion.add_plot("ct2_adhesion_mean", style='dots', color='orange', size=3)
+                self.plot_win_adhesion.add_plot("lambda_adhesion", style='dots', color='lime', size=3)
                 # time
                 self.plot_win_adhesion.add_plot("experiment_time", style='dots', color='yellow', size=2)
 
@@ -383,13 +387,13 @@ class GrowthSteppable(SteppableBasePy):
                     grid=True,
                     config_options={'legend': True},
                 )
-                self.plot_win_contact.add_plot("total", style='lines', color='maroon', size=2)
-                self.plot_win_contact.add_plot("medium_medium", style='lines', color='red', size=2)
-                self.plot_win_contact.add_plot("medium_ct1", style='lines', color='orange', size=2)
-                self.plot_win_contact.add_plot("medium_ct2", style='lines', color='purple', size=2)
-                self.plot_win_contact.add_plot("ct1_ct1", style='lines', color='cyan', size=2)
-                self.plot_win_contact.add_plot("ct1_ct2", style='lines', color='teal', size=2)
-                self.plot_win_contact.add_plot("ct2_ct2", style='lines', color='blue', size=2)
+                self.plot_win_contact.add_plot("total", style='lines', color='maroon', size=3)
+                self.plot_win_contact.add_plot("medium_medium", style='lines', color='green', size=3)
+                self.plot_win_contact.add_plot("medium_ct1", style='lines', color='blue', size=3)
+                self.plot_win_contact.add_plot("medium_ct2", style='lines', color='red', size=3)
+                self.plot_win_contact.add_plot("ct1_ct1", style='lines', color='cyan', size=3)
+                self.plot_win_contact.add_plot("ct1_ct2", style='lines', color='olive', size=3)
+                self.plot_win_contact.add_plot("ct2_ct2", style='lines', color='orange', size=3)
                 # time
                 self.plot_win_contact.add_plot("experiment_time", style='dots', color='yellow', size=2)
 
@@ -404,15 +408,12 @@ class GrowthSteppable(SteppableBasePy):
                     grid=True,
                     config_options={'legend': True},
                 )
-                self.plot_win_velocity.add_plot("velocity_mean", style='lines', color='purple', size=2)
-                self.plot_win_velocity.add_plot("velocity", style='dots', color='magenta', size=2)
-                self.plot_win_velocity.add_plot("lambda_velocity", style='dots', color='lime', size=2)
-                self.plot_win_velocity.add_plot("persistence_velocity", style='dots', color='cyan', size=2)
+                self.plot_win_velocity.add_plot("lambda_velocity", style='dots', color='lime', size=3)
+                self.plot_win_velocity.add_plot("persistence_velocity", style='dots', color='cyan', size=3)
                 self.plot_win_velocity.add_plot("experiment_time", style='dots', color='yellow', size=2)
 
             # text output time
             #self.msg_win_rudy = self.add_new_message_window(title='Rudy a message to you ...')  # bue: yet unavilable on nanohub.
-
 
         ##############
         # processing #
@@ -426,19 +427,16 @@ class GrowthSteppable(SteppableBasePy):
         # reset variables
         lr_ct1_volume = []
         lr_ct2_volume = []
-        lr_ct1_volume_edge = []
-        lr_ct2_volume_edge = []
+        lr_ct1_target_volume = []
+        lr_ct2_target_volume = []
         lr_ct1_surface = []
         lr_ct2_surface = []
-        lr_ct1_surface_edge = []
-        lr_ct2_surface_edge = []
-        lr_ct1_volpsurf = []
-        lr_ct2_volpsurf = []
-        lr_ct1_volpsurf_edge = []
-        lr_ct2_volpsurf_edge = []
-        #lr_ct1_adhesion_mean = []
-        #lr_ct2_adhesion_mean = []
-        lr_velocity = []
+        lr_ct1_target_surface = []
+        lr_ct2_target_surface = []
+        lr_ct1_surfpvol = []
+        lr_ct2_surfpvol = []
+        lr_ct1_adhesion = []
+        lr_ct2_adhesion = []
 
         di_contact = {}
         di_contact.update({'medium_medium': 0})
@@ -451,8 +449,9 @@ class GrowthSteppable(SteppableBasePy):
         # for each cell
         for cell in self.cell_list:
             # reset variables
+            set_adhesion = None
             set_volume = None
-            set_volumepsurface = None
+            set_surfpvol = None
             set_surface = None
             set_adhesion = None
 
@@ -468,65 +467,46 @@ class GrowthSteppable(SteppableBasePy):
             if (cell.type == self.CT1):
                 # ct1 adhesion
                 if (time < 0):
-                    set_adhesion = adhesion_init
+                    set_adhesion = adhesion_min
                 else:
                     set_adhesion = dd_cellline[ct1]['adhesion_min'] + ((adhesion_max - dd_cellline[ct1]['adhesion_min']) * (time - ct1_kd_time)**hill_n) / (dd_cellline[ct1]['km_half_time']**hill_n + (time - ct1_kd_time)**hill_n)
-                # plot
-                if (adhesion_verbose):
-                    self.plot_win_adhesion.add_data_point("ct1_adhesion", x=mcs, y=set_adhesion)
 
-                # if edge cell
+                # ct1 popu edge cell
                 if (b_edgecell > 0):
                     # ct1_volume_edge
                     if (time < 0):
-                        set_volume = dd_cellline[ct1]['volume_edge_final']
+                        set_volume = dd_cellline[ct1]['volume_edge']
                     else:
-                        set_volume = dd_cellline[ct1]['volume_edge_final'] + ((dd_cellline['WT']['volume_edge_final'] - dd_cellline[ct1]['volume_edge_final']) * (time - ct1_kd_time)**hill_n) / (dd_cellline[ct1]['km_half_time']**hill_n + (time - ct1_kd_time)**hill_n)
-                    # plot
-                    if (volume_verbose):
-                        self.plot_win_volume.add_data_point("ct1_volume_edge", x=mcs, y=set_volume)
-                        lr_ct1_volume_edge.append(cell.volume)
-
-                    # ct1_volume_per_surface_edge and ct1_surface_edge
+                        set_volume = dd_cellline[ct1]['volume_edge'] + ((dd_cellline['WT']['volume_edge'] - dd_cellline[ct1]['volume_edge']) * (time - ct1_kd_time)**hill_n) / (dd_cellline[ct1]['km_half_time']**hill_n + (time - ct1_kd_time)**hill_n)
+                    # ct1_surface_per_volume_edge
                     if (time < 0):
-                        set_volumepsurface = dd_cellline[ct1]['volumepsurface_edge_final']
+                        set_surfpvol = dd_cellline[ct1]['surfacepvolume_edge']
                     else:
-                        set_volumepsurface = dd_cellline[ct1]['volumepsurface_edge_final'] + ((dd_cellline['WT']['volumepsurface_edge_final'] - dd_cellline[ct1]['volumepsurface_edge_final']) * (time - ct1_kd_time)**hill_n) / (dd_cellline[ct1]['km_half_time']**hill_n + (time - ct1_kd_time)**hill_n)
-                    # calculate surface
-                    set_surface = set_volume / set_volumepsurface
-                    # plot
-                    if (volpsurf_verbose):
-                        self.plot_win_volpsurf.add_data_point("ct1_volume_per_surface_edge", x=mcs, y=set_volumepsurface)
-                        lr_ct1_volpsurf_edge.append(set_volumepsurface)
-                    if (surface_verbose):
-                        self.plot_win_surface.add_data_point("ct1_surface_edge", x=mcs, y=set_surface)
-                        lr_ct1_surface_edge.append(cell.surface)
+                        set_surfpvol = dd_cellline[ct1]['surfacepvolume_edge'] + ((dd_cellline['WT']['surfacepvolume_edge'] - dd_cellline[ct1]['surfacepvolume_edge']) * (time - ct1_kd_time)**hill_n) / (dd_cellline[ct1]['km_half_time']**hill_n + (time - ct1_kd_time)**hill_n)
 
+                # ct1 popu center cell
                 else:
                     # ct1_volume
                     if (time < 0):
-                        set_volume = dd_cellline[ct1]['volume_final']
+                        set_volume = dd_cellline[ct1]['volume']
                     else:
-                        set_volume = dd_cellline[ct1]['volume_final'] + ((dd_cellline['WT']['volume_final'] - dd_cellline[ct1]['volume_final']) * (time - ct1_kd_time)**hill_n) / (dd_cellline[ct1]['km_half_time']**hill_n + (time - ct1_kd_time)**hill_n)
-                    # plot
-                    if (volume_verbose):
-                        self.plot_win_volume.add_data_point("ct1_volume", x=mcs, y=set_volume)
-                        lr_ct1_volume.append(cell.volume)
-
-                    # ct1_volume_per_surface and ct1_surface
+                        set_volume = dd_cellline[ct1]['volume'] + ((dd_cellline['WT']['volume'] - dd_cellline[ct1]['volume']) * (time - ct1_kd_time)**hill_n) / (dd_cellline[ct1]['km_half_time']**hill_n + (time - ct1_kd_time)**hill_n)
+                    # ct1_surface_per_volume
                     if (time < 0):
-                        set_volumepsurface = dd_cellline[ct1]['volumepsurface_final']
+                        set_surfpvol = dd_cellline[ct1]['surfacepvolume']
                     else:
-                        set_volumepsurface = dd_cellline[ct1]['volumepsurface_final'] + ((dd_cellline['WT']['volumepsurface_final'] - dd_cellline[ct1]['volumepsurface_final']) * (time - ct1_kd_time)**hill_n) / (dd_cellline[ct1]['km_half_time']**hill_n + (time - ct1_kd_time)**hill_n)
-                    # calculate surface
-                    set_surface = set_volume / set_volumepsurface
-                    # plot
-                    if (volpsurf_verbose):
-                        self.plot_win_volpsurf.add_data_point("ct1_volumepsurface", x=mcs, y=set_volumepsurface)
-                        lr_ct1_volpsurf.append(set_volumepsurface)
-                    if (surface_verbose):
-                        self.plot_win_surface.add_data_point("ct1_surface", x=mcs, y=set_surface)
-                        lr_ct1_surface.append(cell.surface)
+                        set_surfpvol = dd_cellline[ct1]['surfacepvolume'] + ((dd_cellline['WT']['surfacepvolume'] - dd_cellline[ct1]['surfacepvolume']) * (time - ct1_kd_time)**hill_n) / (dd_cellline[ct1]['km_half_time']**hill_n + (time - ct1_kd_time)**hill_n)
+
+                # ct1_surface
+                set_surface = 4 * (cell.volume)**(1/2) * set_surfpvol
+
+                # for plots
+                lr_ct1_volume.append(cell.volume)
+                lr_ct1_target_volume.append(set_volume)
+                lr_ct1_surface.append(cell.surface)
+                lr_ct1_target_surface.append(set_surface)
+                lr_ct1_surfpvol.append(set_surfpvol)
+                lr_ct1_adhesion.append(set_adhesion)
 
             #######
             # ct2 #
@@ -534,65 +514,46 @@ class GrowthSteppable(SteppableBasePy):
             elif (cell.type == self.CT2):
                 # ct2_adhesion
                 if (time < 0):
-                    set_adhesion = adhesion_init
+                    set_adhesion = adhesion_min
                 else:
                     set_adhesion = dd_cellline[ct2]['adhesion_min'] + ((adhesion_max - dd_cellline[ct2]['adhesion_min']) * (time - ct2_kd_time)**hill_n) / (dd_cellline[ct2]['km_half_time']**hill_n + (time - ct2_kd_time)**hill_n)
-                # plot
-                if (adhesion_verbose):
-                    self.plot_win_adhesion.add_data_point("ct2_adhesion", x=mcs, y=set_adhesion)
 
-                # if edge cell
+                # ct2 popu edge cell
                 if (b_edgecell > 0):
                     # ct2_volume_edge
                     if (time < 0):
-                        set_volume = dd_cellline[ct2]['volume_edge_final']
+                        set_volume = dd_cellline[ct2]['volume_edge']
                     else:
-                        set_volume = dd_cellline[ct2]['volume_edge_final'] + ((dd_cellline['WT']['volume_edge_final'] - dd_cellline[ct2]['volume_edge_final']) * (time - ct2_kd_time)**hill_n) / (dd_cellline[ct2]['km_half_time']**hill_n + (time - ct2_kd_time)**hill_n)
-                    # plot
-                    if (volume_verbose):
-                        self.plot_win_volume.add_data_point("ct2_volume_edge", x=mcs, y=set_volume)
-                        lr_ct2_volume_edge.append(cell.volume)
-
-                    # ct2_volume_per_surface_edge and ct2_surface_edge
+                        set_volume = dd_cellline[ct2]['volume_edge'] + ((dd_cellline['WT']['volume_edge'] - dd_cellline[ct2]['volume_edge']) * (time - ct2_kd_time)**hill_n) / (dd_cellline[ct2]['km_half_time']**hill_n + (time - ct2_kd_time)**hill_n)
+                    # ct2_surface_per_volume_edge
                     if (time < 0):
-                        set_volumepsurface = dd_cellline[ct2]['volumepsurface_edge_final']
+                        set_surfpvol = dd_cellline[ct2]['surfacepvolume_edge']
                     else:
-                        set_volumepsurface = dd_cellline[ct2]['volumepsurface_edge_final'] + ((dd_cellline['WT']['volumepsurface_edge_final'] - dd_cellline[ct2]['volumepsurface_edge_final']) * (time - ct2_kd_time)**hill_n) / (dd_cellline[ct2]['km_half_time']**hill_n + (time - ct2_kd_time)**hill_n)
-                    # calculate surface
-                    set_surface = set_volume / set_volumepsurface
-                    # plot
-                    if (volpsurf_verbose):
-                        self.plot_win_volpsurf.add_data_point("ct2_volume_per_surface_edge", x=mcs, y=set_volumepsurface)
-                        lr_ct2_volpsurf_edge.append(set_volumepsurface)
-                    if (surface_verbose):
-                        self.plot_win_surface.add_data_point("ct2_surface_edge", x=mcs, y=set_surface)
-                        lr_ct2_surface_edge.append(cell.surface)
+                        set_surfpvol = dd_cellline[ct2]['surfacepvolume_edge'] + ((dd_cellline['WT']['surfacepvolume_edge'] - dd_cellline[ct2]['surfacepvolume_edge']) * (time - ct2_kd_time)**hill_n) / (dd_cellline[ct2]['km_half_time']**hill_n + (time - ct2_kd_time)**hill_n)
 
+                # ct2 popu center cell
                 else:
                     # ct2_volume
                     if (time < 0):
-                        set_volume = dd_cellline[ct2]['volume_final']
+                        set_volume = dd_cellline[ct2]['volume']
                     else:
-                        set_volume = dd_cellline[ct2]['volume_final'] + ((dd_cellline['WT']['volume_final'] - dd_cellline[ct2]['volume_final']) * (time - ct2_kd_time)**hill_n) / (dd_cellline[ct2]['km_half_time']**hill_n + (time - ct2_kd_time)**hill_n)
-                    # plot
-                    if (volume_verbose):
-                        self.plot_win_volume.add_data_point("ct2_volume", x=mcs, y=set_volume)
-                        lr_ct2_volume.append(cell.volume)
+                        set_volume = dd_cellline[ct2]['volume'] + ((dd_cellline['WT']['volume'] - dd_cellline[ct2]['volume']) * (time - ct2_kd_time)**hill_n) / (dd_cellline[ct2]['km_half_time']**hill_n + (time - ct2_kd_time)**hill_n)
+                    # ct2_surface_per_volume
+                    if (time < 0):
+                        set_surfpvol = dd_cellline[ct2]['surfacepvolume']
+                    else:
+                        set_surfpvol = dd_cellline[ct2]['surfacepvolume'] + ((dd_cellline['WT']['surfacepvolume'] - dd_cellline[ct2]['surfacepvolume']) * (time - ct2_kd_time)**hill_n) / (dd_cellline[ct2]['km_half_time']**hill_n + (time - ct1_kd_time)**hill_n)
 
-                    # ct2_volume per surface
-                    if (time < 0): #or (time <= ct2_kd_time):
-                        set_volumepsurface = dd_cellline[ct2]['volumepsurface_final']
-                    else:
-                        set_volumepsurface = dd_cellline[ct2]['volumepsurface_final'] + ((dd_cellline['WT']['volumepsurface_final'] - dd_cellline[ct2]['volumepsurface_final']) * (time - ct2_kd_time)**hill_n) / (dd_cellline[ct2]['km_half_time']**hill_n + (time - ct1_kd_time)**hill_n)
-                    # calculate surface
-                    set_surface = set_volume / set_volumepsurface
-                    # plot
-                    if (volpsurf_verbose):
-                        self.plot_win_volpsurf.add_data_point("ct2_volumepsurface", x=mcs, y=set_volumepsurface)
-                        lr_ct2_volpsurf.append(set_volumepsurface)
-                    if (surface_verbose):
-                        self.plot_win_surface.add_data_point("ct2_surface", x=mcs, y=set_surface)
-                        lr_ct2_surface.append(cell.surface)
+                # ct2_surface
+                set_surface = 4 * (cell.volume)**(1/2) * set_surfpvol
+
+                # for plots
+                lr_ct2_volume.append(cell.volume)
+                lr_ct2_target_volume.append(set_volume)
+                lr_ct2_surface.append(cell.surface)
+                lr_ct2_target_surface.append(set_surface)
+                lr_ct2_surfpvol.append(set_surfpvol)
+                lr_ct2_adhesion.append(set_adhesion)
 
             ############
             # ct error #
@@ -600,16 +561,15 @@ class GrowthSteppable(SteppableBasePy):
             else:
                 sys.exit("unknowen cell type detetced: {cell.type}")
 
+
             ##########################
             # update cell parameters #
             ##########################
             # volume
-            cell.targetVolume = int(set_volume)
+            cell.targetVolume = set_volume
             # surface
-            #cell.dict['volumepsurface'] = set_volumepsurface
-            cell.targetSurface = int(set_surface)
+            cell.targetSurface = set_surface
             # adhesion
-            #cell.dict['adhesion'] = set_adhesion
             self.adhesionFlexPlugin.setAdhesionMoleculeDensity(cell, 'cdh', set_adhesion)
             # velocity
             cell.dict['angle'] = cell.dict['angle'] + 2.0 * np.pi * np.random.uniform(-1.0,1.0) * (1 - cell.dict['alpha'])
@@ -654,31 +614,38 @@ class GrowthSteppable(SteppableBasePy):
         ################
         # volume
         if (volume_verbose):
+            self.plot_win_volume.add_data_point("ct1_target_volume_mean", x=mcs, y=np.mean(lr_ct1_target_volume))
             self.plot_win_volume.add_data_point("ct1_volume_mean", x=mcs, y=np.mean(lr_ct1_volume))
+            self.plot_win_volume.add_data_point("ct2_target_volume_mean", x=mcs, y=np.mean(lr_ct2_target_volume))
             self.plot_win_volume.add_data_point("ct2_volume_mean", x=mcs, y=np.mean(lr_ct2_volume))
-            self.plot_win_volume.add_data_point("ct1_volume_edge_mean", x=mcs, y=np.mean(lr_ct1_volume_edge))
-            self.plot_win_volume.add_data_point("ct2_volume_edge_mean", x=mcs, y=np.mean(lr_ct2_volume_edge))
             self.plot_win_volume.add_data_point("lambda_volume", x=mcs, y=lambda_volume)
             self.plot_win_volume.add_data_point("experiment_time", x=mcs, y=time)
         # surface
         if (surface_verbose):
+            self.plot_win_surface.add_data_point("ct1_target_surface_mean", x=mcs, y=np.mean(lr_ct1_target_surface))
             self.plot_win_surface.add_data_point("ct1_surface_mean", x=mcs, y=np.mean(lr_ct1_surface))
+            self.plot_win_surface.add_data_point("ct2_target_surface_mean", x=mcs, y=np.mean(lr_ct2_target_surface))
             self.plot_win_surface.add_data_point("ct2_surface_mean", x=mcs, y=np.mean(lr_ct2_surface))
-            self.plot_win_surface.add_data_point("ct1_surface_edge_mean", x=mcs, y=np.mean(lr_ct1_surface_edge))
-            self.plot_win_surface.add_data_point("ct2_surface_edge_mean", x=mcs, y=np.mean(lr_ct2_surface_edge))
             self.plot_win_surface.add_data_point("lambda_surface", x=mcs, y=lambda_surface)
             self.plot_win_surface.add_data_point("experiment_time", x=mcs, y=time)
-        if (volpsurf_verbose):
-            self.plot_win_volpsurf.add_data_point("ct1_volume_per_surface_mean", x=mcs, y=np.mean(lr_ct1_volpsurf))
-            self.plot_win_volpsurf.add_data_point("ct2_volume_per_surface_mean", x=mcs, y=np.mean(lr_ct2_volpsurf))
-            self.plot_win_volpsurf.add_data_point("ct1_volume_per_surface_edge_mean", x=mcs, y=np.mean(lr_ct1_volpsurf_edge))
-            self.plot_win_volpsurf.add_data_point("ct2_volume_per_surface_edge_mean", x=mcs, y=np.mean(lr_ct2_volpsurf_edge))
-            self.plot_win_volpsurf.add_data_point("experiment_time", x=mcs, y=time)
+        # volume and surface
+        if (surfpvol_verbose):
+            # surface per volume
+            self.plot_win_surfpvol.add_data_point("ct1_surface_per_volume_mean", x=mcs, y=np.mean(lr_ct1_surfpvol))
+            self.plot_win_surfpvol.add_data_point("ct2_surface_per_volume_mean", x=mcs, y=np.mean(lr_ct2_surfpvol))
+            self.plot_win_surfpvol.add_data_point("experiment_time", x=mcs, y=time)
+            # volume versus surface
+            self.plot_win_volvsurf.add_data_point("ct1_target_volume_versus_surface_mean", x=np.mean(lr_ct1_target_volume), y=np.mean(lr_ct1_target_surface))
+            self.plot_win_volvsurf.add_data_point("ct1_volume_versus_surface_mean", x=np.mean(lr_ct1_volume), y=np.mean(lr_ct1_surface))
+            self.plot_win_volvsurf.add_data_point("ct2_target_volumet_versus_surface_mean", x=np.mean(lr_ct2_target_volume), y=np.mean(lr_ct2_target_surface))
+            self.plot_win_volvsurf.add_data_point("ct2_volume_versus_surface_mean", x=np.mean(lr_ct2_volume), y=np.mean(lr_ct2_surface))
         # adhesion
         if (adhesion_verbose):
             # in
-            self.plot_win_adhesion.add_data_point("medium_adhesion", x=mcs, y=adhesion_init)
             self.plot_win_adhesion.add_data_point("wt_adhesion", x=mcs, y=adhesion_max)
+            self.plot_win_adhesion.add_data_point("ct1_adhesion_mean", x=mcs, y=np.mean(lr_ct1_adhesion))
+            self.plot_win_adhesion.add_data_point("ct2_adhesion_mean", x=mcs, y=np.mean(lr_ct2_adhesion))
+            self.plot_win_adhesion.add_data_point("medium_adhesion", x=mcs, y=adhesion_min)
             lambda_adhesion = self.get_xml_element("lamdaAdhesion").cdata
             self.plot_win_adhesion.add_data_point("lambda_adhesion", x=mcs, y=lambda_adhesion)
             # time
@@ -692,8 +659,9 @@ class GrowthSteppable(SteppableBasePy):
             self.plot_win_contact.add_data_point("ct1_ct1", x=mcs, y=di_contact['ct1_ct1'])
             self.plot_win_contact.add_data_point("ct1_ct2", x=mcs, y=di_contact['ct1_ct2'])
             self.plot_win_contact.add_data_point("ct2_ct2", x=mcs, y=int(di_contact['ct2_ct2']))
+            self.plot_win_contact.add_data_point("medium_medium", x=mcs, y=di_contact['medium_medium'] )
             # time
-            self.plot_win_adhesion.add_data_point("experiment_time", x=mcs, y=time)
+            self.plot_win_contact.add_data_point("experiment_time", x=mcs, y=time)
             #print(f"{mcs}[mcs]\t{time}[h]\ttotal: {sum(di_contact.values())}\t{sorted(di_contact.items())}")
         # velocity
         if (velocity_verbose):
@@ -740,9 +708,9 @@ class MitosisSteppable(MitosisSteppableBase):
                     grid=True,
                     config_options={'legend': True},
                 )
-                self.plot_win_time.add_plot("experiment_time", style='dots', color='yellow', size=2)
-                self.plot_win_time.add_plot("generation_time", style='dots', color='red', size=2)
-                self.plot_win_time.add_plot("division_time", style='dots', color='orange', size=2)
+                self.plot_win_time.add_plot("experiment_time", style='dots', color='yellow', size=3)
+                self.plot_win_time.add_plot("generation_time", style='dots', color='red', size=3)
+                self.plot_win_time.add_plot("division_time", style='dots', color='orange', size=3)
 
         ##############
         # processing #
@@ -763,9 +731,9 @@ class MitosisSteppable(MitosisSteppableBase):
             if (cell.type == self.CT1):
                 # ct1 gernation time
                 if (time < 0):
-                    set_generation_time = dd_cellline[ct1]['generation_time_final']
+                    set_generation_time = dd_cellline[ct1]['generation_time']
                 else:
-                    set_generation_time = dd_cellline[ct1]['generation_time_final'] + ((dd_cellline['WT']['generation_time_final'] - dd_cellline[ct1]['generation_time_final']) * (time - ct1_kd_time)**hill_n) / (dd_cellline[ct1]['km_half_time']**hill_n + (time - ct1_kd_time)**hill_n)
+                    set_generation_time = dd_cellline[ct1]['generation_time'] + ((dd_cellline['WT']['generation_time'] - dd_cellline[ct1]['generation_time']) * (time - ct1_kd_time)**hill_n) / (dd_cellline[ct1]['km_half_time']**hill_n + (time - ct1_kd_time)**hill_n)
 
             #######
             # ct2 #
@@ -773,9 +741,9 @@ class MitosisSteppable(MitosisSteppableBase):
             elif (cell.type == self.CT2):
                 # ct2_generation_time
                 if (time < 0):
-                    set_generation_time = dd_cellline[ct2]['generation_time_final']
+                    set_generation_time = dd_cellline[ct2]['generation_time']
                 else:
-                    set_generation_time = dd_cellline[ct2]['generation_time_final'] + ((dd_cellline['WT']['generation_time_final'] - dd_cellline[ct2]['generation_time_final']) * (time - ct2_kd_time)**hill_n) / (dd_cellline[ct2]['km_half_time']**hill_n + (time - ct2_kd_time)**hill_n)
+                    set_generation_time = dd_cellline[ct2]['generation_time'] + ((dd_cellline['WT']['generation_time'] - dd_cellline[ct2]['generation_time']) * (time - ct2_kd_time)**hill_n) / (dd_cellline[ct2]['km_half_time']**hill_n + (time - ct2_kd_time)**hill_n)
 
             ############
             # ct error #
@@ -814,4 +782,3 @@ class MitosisSteppable(MitosisSteppableBase):
     def update_attributes(self):
         self.parent_cell.targetVolume /= 2.0  # reducing parent target volume
         self.clone_parent_2_child()
-

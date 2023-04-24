@@ -284,8 +284,6 @@ ct1_area_edge_final)
             <PropertyVector symbol="dv" value="0.0, 0.0, 0.0" name="direction_vector"/>
             <PersistentMotion protrusion="true" decay-time="0.003" strength="9"/>
 
-            <Property symbol="p" value="10"/>
-            <Constant symbol="degp" value="0.9"/>
             <!-- bue: missing in original
             <Property symbol="avgLikeNeighborCount" value="0"/>
             <Property symbol="avgLikeNeighborLength" value="0"/>
@@ -342,8 +340,6 @@ ct1_area_edge_final)
             <PropertyVector symbol="dv" value="0.0, 0.0, 0.0" name="direction_vector"/>
             <PersistentMotion protrusion="true" decay-time="0.003" strength="9"/>
 
-            <Property symbol="p" value="10"/>
-            <Constant symbol="degp" value="0.9"/>
             <!--
             <Property symbol="avgLikeNeighborCount" value="0"/>
             <Property symbol="avgLikeNeighborLength" value="0"/>
@@ -386,8 +382,6 @@ ct1_area_edge_final)
 
         <CellType class="medium" name="medium">
             <Property symbol="cadherin" value="ctall_medium_adhesion"/>
-            <Property symbol="p" value="0"/>
-            <Constant symbol="degp" value="0.0"/>
             <!--
             <Property symbol="avgLikeNeighborCount" value="0"/>
             <Property symbol="avgLikeNeighborLength" value="0"/>
