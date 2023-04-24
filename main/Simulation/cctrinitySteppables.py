@@ -90,8 +90,8 @@ class GrowthSteppable(SteppableBasePy):
         self.add_steering_param(name='ct1_cdh_express_fract', val=100, min_val=0, max_val=100, widget_name='slider')
         self.add_steering_param(name='ct2_cdh_express_fract', val=100, min_val=0, max_val=100, widget_name='slider')
         # knock down time {-144 .. 120}  # 96
-        self.add_steering_param(name='ct1_kd_time', val=0, min_val=-96, max_val=96, widget_name='slider')
-        self.add_steering_param(name='ct2_kd_time', val=0, min_val=-96, max_val=96, widget_name='slider')
+        self.add_steering_param(name='ct1_kd_time', val=-6, min_val=-96, max_val=96, widget_name='slider')
+        self.add_steering_param(name='ct2_kd_time', val=-6, min_val=-96, max_val=96, widget_name='slider')
         # seeding
         self.add_steering_param(name='ct1_seed', val=50, min_val=0, max_val=100, widget_name='slider')
         self.add_steering_param(name='ct2_seed', val=50, min_val=0, max_val=100, widget_name='slider')
