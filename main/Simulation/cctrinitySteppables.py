@@ -92,7 +92,7 @@ class GrowthSteppable(SteppableBasePy):
         # plotting windows
         self.add_steering_param(name='time_plot', val='off', enum=['off','on'], widget_name='pull-down')
         self.add_steering_param(name='volume_plot', val='off', enum=['off','on'], widget_name='pull-down')
-        self.add_steering_param(name='surface_versus_volume_plot', val='off', enum=['off','on'], widget_name='pull-down')
+        self.add_steering_param(name='surf_vs_vol_plot', val='off', enum=['off','on'], widget_name='pull-down')
         self.add_steering_param(name='surface_plot', val='off', enum=['off','on'], widget_name='pull-down')
         self.add_steering_param(name='adhesion_plot', val='on', enum=['off','on'], widget_name='pull-down')
         self.add_steering_param(name='contact_plot', val='on', enum=['off','on'], widget_name='pull-down')
@@ -137,7 +137,7 @@ class GrowthSteppable(SteppableBasePy):
             time_verbose = True
         if self.get_steering_param('volume_plot') == 'on':
             volume_verbose = True
-        if self.get_steering_param('surface_versus_volume_plot') == 'on':
+        if self.get_steering_param('surf_vs_vol_plot') == 'on':
             surfpvol_verbose = True
         if self.get_steering_param('surface_plot') == 'on':
             surface_verbose = True
