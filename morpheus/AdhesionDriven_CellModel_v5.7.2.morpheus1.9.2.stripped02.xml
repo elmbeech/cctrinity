@@ -41,20 +41,15 @@ added random seed so time doesn't determine randomness of initial cell positions
         <Variable symbol="ct1_area_init" value="137"/>
         <Variable symbol="ct1_area" value="137" name=""/>
         <Variable symbol="ct1_area_final" value="137" name=""/>
-        <Variable symbol="ct1_area_final_sd" value="34.03"/>
         <Variable symbol="ct1_area_edge_init" value="177"/>
         <Variable symbol="ct1_area_edge" value="177" name=""/>
         <Variable symbol="ct1_area_edge_final" value="177" name=""/>
-        <Variable symbol="ct1_area_edge_final_sd" value="49.66"/>
         <Variable symbol="ct1_generation_time_init" value="20"/>
         <Variable symbol="ct1_generation_time_final" value="20"/>
         <Variable symbol="ct1_generation_time" value="20"/>
         <Variable symbol="ct1_membrane_str_init" value="0.5"/>
         <Variable symbol="ct1_membrane_str_final" value="0.5"/>
         <Variable symbol="ct1_membrane_str" value="0.5"/>
-        <Variable symbol="ct1_persistent_motion_str_init" value="9"/>
-        <Variable symbol="ct1_persistent_motion_str_final" value="9"/>
-        <Variable symbol="ct1_persistent_motion" value="9"/>
         <Variable symbol="ct2_perturbation_time" value="0" name="time_of_knockout_initiation_ct2_adhesion"/>
         <Constant symbol="adhesion_init_ct2" value="-100"/>
         <Variable symbol="ct2_adhesion_weak" value="-100"/>
@@ -68,24 +63,18 @@ added random seed so time doesn't determine randomness of initial cell positions
         <Variable symbol="ct2_hill_n" value="5.0"/>
         <Variable symbol="ct2_area_init" value="137"/>
         <Variable symbol="ct2_area" value="137"/>
-        <Variable symbol="ct2_area_final_sd" value="34.03"/>
         <Variable symbol="ct2_area_final" value="137"/>
         <Variable symbol="ct2_area_edge_init" value="177"/>
         <Variable symbol="ct2_area_edge" value="177"/>
         <Variable symbol="ct2_area_edge_final" value="177"/>
-        <Variable symbol="ct2_area_edge_final_sd" value="49.66"/>
         <Variable symbol="ct2_generation_time_init" value="20"/>
         <Variable symbol="ct2_generation_time_final" value="20"/>
         <Variable symbol="ct2_generation_time" value="20"/>
         <Variable symbol="ct2_membrane_str_init" value="0.5"/>
         <Variable symbol="ct2_membrane_str_final" value="0.5"/>
         <Variable symbol="ct2_membrane_str" value="0.5"/>
-        <Variable symbol="ct2_persistent_motion_str_init" value="9"/>
-        <Variable symbol="ct2_persistent_motion_str_final" value="9"/>
-        <Variable symbol="ct2_persistent_motion" value="9"/>
 
         <System solver="euler" time-step="0.1" name="ct1_mechanics_updater">
-
             <Rule symbol-ref="ct1_adhesion">
                 <Expression>if(time &lt; burn_in_time, adhesion_init_ct1,
   if(time > ct1_perturbation_time
@@ -232,15 +221,8 @@ ct1_area_edge_final)
         <Constant symbol="inhibited_offset_x" value="0"/>
         <Constant symbol="inhibited_offset_y" value="0"/>
 
-        <!--
-        <Field symbol="U" value="0" name="chemoattractant">
-            <Diffusion rate="0"/>
-        </Field>
-        -->
-
         <Variable symbol="num_cells_ct2" value="50"/>
         <Variable symbol="num_cells_ct1" value="100-num_cells_ct2"/>
-        <Variable symbol="avgMediaNeighborLength" value="1" name="percent_membrane_bordeing_media"/>
         <Variable symbol="burn_in_time" value="5"/>
     </Global>
 
@@ -284,13 +266,6 @@ ct1_area_edge_final)
             <PropertyVector symbol="dv" value="0.0, 0.0, 0.0" name="direction_vector"/>
             <PersistentMotion protrusion="true" decay-time="0.003" strength="9"/>
 
-            <Property symbol="p" value="10"/>
-            <Constant symbol="degp" value="0.9"/>
-            <!-- bue: missing in original
-            <Property symbol="avgLikeNeighborCount" value="0"/>
-            <Property symbol="avgLikeNeighborLength" value="0"/>
-            -->
-
             <Property symbol="d" value="0" name="divisions"/>
             <Property symbol="dc" value="0.0" name="division_time_counter"/>
             <Property symbol="dt" value="ct1_generation_time" name="generationTime"/>
@@ -320,8 +295,6 @@ ct1_area_edge_final)
                     <Expression>if(isEdgeCell > 0,ct1_membraneElasticity_edge,ct1_membraneElasticity)</Expression>
                 </Rule>
             </System>
-
-            <!-- <Chemotaxis contact-inhibition="true" field="U" strength="3" retraction="true"/> -->
         </CellType>
 
         <CellType class="biological" name="ct2">
@@ -341,13 +314,6 @@ ct1_area_edge_final)
 
             <PropertyVector symbol="dv" value="0.0, 0.0, 0.0" name="direction_vector"/>
             <PersistentMotion protrusion="true" decay-time="0.003" strength="9"/>
-
-            <Property symbol="p" value="10"/>
-            <Constant symbol="degp" value="0.9"/>
-            <!--
-            <Property symbol="avgLikeNeighborCount" value="0"/>
-            <Property symbol="avgLikeNeighborLength" value="0"/>
-            -->
 
             <Property symbol="d" value="0" name="divisions"/>
             <Property symbol="dc" value="0.0" name="division_time_counter"/>
@@ -378,26 +344,14 @@ ct1_area_edge_final)
                     <Expression>if(isEdgeCell > 0,ct2_membraneElasticity_edge,ct2_membraneElasticity)</Expression>
                 </Rule>
             </System> <!-- bue: missing in origianl -->
-
-            <!--
-            <Chemotaxis contact-inhibition="true" field="U" strength="3" retraction="true"/>
-            -->
         </CellType>
 
         <CellType class="medium" name="medium">
             <Property symbol="cadherin" value="ctall_medium_adhesion"/>
-            <Property symbol="p" value="0"/>
-            <Constant symbol="degp" value="0.0"/>
-            <!--
-            <Property symbol="avgLikeNeighborCount" value="0"/>
-            <Property symbol="avgLikeNeighborLength" value="0"/>
-            -->
         </CellType>
-
     </CellTypes>
 
     <CPM>
-
         <Interaction default="0">
             <Contact type1="ct1" type2="medium" value="0">
                 <HomophilicAdhesion strength="1" adhesive="ctall_medium_adhesion"/>
@@ -429,11 +383,9 @@ ct1_area_edge_final)
                 <Order>1</Order>
             </Neighborhood>
         </ShapeSurface>
-
     </CPM>
 
     <CellPopulations>
-
         <Population size="1" type="ct1" name="cell_type_1">
             <InitProperty symbol-ref="dc">
                 <Expression>rand_uni(0,dt)</Expression>
@@ -451,45 +403,9 @@ ct1_area_edge_final)
                 <Expression>rand_uni(0,dt)</Expression>
             </InitProperty>
         </Population>
-
     </CellPopulations>
 
     <Analysis>
-
-        <Gnuplotter time-step="1" decorate="false">
-            <Terminal size="1200,1200,0" name="png"/>
-            <Plot>
-                <Cells value="c" min="0" max="3">
-                    <ColorMap>
-                        <Color value="0" color="green"/>
-                        <Color value="1" color="red"/>
-                        <Color value="2" color="yellow"/>
-                        <Color value="3" color="blue"/>
-                    </ColorMap>
-                </Cells>
-            </Plot>
-        </Gnuplotter>
-
-        <Logger time-step="1">
-            <Input>
-                <Symbol symbol-ref="ct1_adhesion"/>
-                <Symbol symbol-ref="ct1_membrane_str"/>
-                <Symbol symbol-ref="ct1_area"/>
-                <Symbol symbol-ref="ct1_area_edge"/>
-                <Symbol symbol-ref="ct1_membraneElasticity"/>
-                <Symbol symbol-ref="ct1_membraneElasticity_edge"/>
-                <Symbol symbol-ref="ct2_adhesion"/>
-                <Symbol symbol-ref="ct2_membrane_str"/>
-                <Symbol symbol-ref="ct2_area"/>
-                <Symbol symbol-ref="ct2_area_edge"/>
-                <Symbol symbol-ref="ct2_membraneElasticity"/>
-                <Symbol symbol-ref="ct2_membraneElasticity_edge"/>
-            </Input>
-            <Output>
-                <TextOutput file-name="cell_membrane_properties" file-numbering="time"/>
-            </Output>
-        </Logger>
-
     </Analysis>
 
 </MorpheusModel>

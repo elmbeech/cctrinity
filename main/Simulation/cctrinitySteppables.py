@@ -69,6 +69,7 @@ r_hpmcs = 1/8
 class GrowthSteppable(SteppableBasePy):
     def __init__(self,frequency=1):
         SteppableBasePy.__init__(self, frequency)
+        self.track_cell_level_scalar_attribute(field_name='Pressure', attribute_name='pressure')
 
     def start(self):
         pass
@@ -277,6 +278,8 @@ class GrowthSteppable(SteppableBasePy):
                 cell.lambdaVecX = - cell.dict['propulsiveforce'] * cell.dict['dirx']
                 cell.lambdaVecY = - cell.dict['propulsiveforce'] * cell.dict['diry']
                 cell.lambdaVecZ = - cell.dict['propulsiveforce'] * cell.dict['diry']
+                # pressure
+                cell.dict['pressure'] = abs(cell.pressure)
 
             ################
             # plot canavas #
@@ -565,6 +568,12 @@ class GrowthSteppable(SteppableBasePy):
                     else:
                         sys.exit(f"Error: unknowen cell.id with medium contact detected: {cell.type}")
             #print(f"cell.id: {cell.id}\t{sorted(di_contact.items())}")
+
+            ################
+            # update plots #
+            ################
+            # pressure
+            cell.dict['pressure'] = abs(cell.pressure)
 
         ################
         # update plots #
