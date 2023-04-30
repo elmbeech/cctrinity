@@ -47,10 +47,10 @@ dd_cellline.update({'ROCK1-20': {  # bue: 20 percent rock1 expression level coma
 # constantes
 adhesion_min = 0  # bue: we don't want that they already start sorting, when they are just kocked down so we set it to the same as weak ct medium and medium medium adhesion
 hill_n = 5.0  # hillpower
-lambda_volume = 3.0 # 1.0
-lambda_surface = 3.0 # 0.5
-lambda_velocity = 9  # 9
-persistence_velocity = 1
+lambda_volume = 3.0  # 1.0
+lambda_surface = 3.0  # 0.5
+lambda_velocity = 3000  # 9 note if per mcs: 9 / 0.003 = 3000
+persistence_velocity = 1  # 0.003 note: cc3d can only handle values per mcs
 
 # the morpheus model specifies time in hours
 # to map cc3d's mcs to hours we made use of the generation_time and final volumes
