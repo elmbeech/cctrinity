@@ -49,7 +49,7 @@ adhesion_min = 0  # bue: we don't want that they already start sorting, when the
 hill_n = 5.0  # hillpower
 lambda_volume = 3.0  # 1.0
 lambda_surface = 3.0  # 0.5
-lambda_velocity = 3000  # 9 note if per mcs: 9 / 0.003 = 3000
+lambda_velocity = 3000  # 9 note: if per mcs 9 / 0.003 = 3000
 persistence_velocity = 1  # 0.003 note: cc3d can only handle values per mcs
 
 # the morpheus model specifies time in hours
